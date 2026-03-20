@@ -154,12 +154,30 @@
     .win-bar{height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden;margin-top:3px}
     .win-fill{height:100%;background:linear-gradient(90deg,var(--teal),var(--accent));border-radius:2px;transition:width .5s ease}
 
-    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(5px);z-index:200;display:flex;align-items:flex-end;animation:fadeIn .2s ease}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(5px);z-index:200;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .2s ease}
     .overlay.hidden{display:none}
     @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-    .modal{background:linear-gradient(160deg,var(--bg1),var(--bg2));border:1px solid rgba(255,255,255,.09);border-radius:26px 26px 0 0;width:100%;max-height:82vh;padding:0 18px calc(var(--safe-bot) + 24px);animation:slideUp .3s cubic-bezier(.34,1.36,.64,1);overflow-y:auto;-webkit-overflow-scrolling:touch}
+    .modal{background:linear-gradient(160deg,var(--bg1),var(--bg2));border:1px solid rgba(255,255,255,.09);border-radius:26px 26px 0 0;width:100%;max-width:600px;max-height:82vh;padding:0 18px calc(var(--safe-bot) + 24px);animation:slideUp .3s cubic-bezier(.34,1.36,.64,1);overflow-y:auto;-webkit-overflow-scrolling:touch}
     .modal::-webkit-scrollbar{display:none}
     @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+    /* ── MODE PAYSAGE ── */
+    @media (orientation:landscape) and (max-height:500px){
+      .overlay{align-items:center}
+      .modal{border-radius:22px;max-height:92vh;max-width:560px;padding:0 20px calc(var(--safe-bot) + 16px)}
+      .modal-handle{margin:10px auto 12px}
+      .score-modal-header{margin-bottom:10px}
+      .score-modal-score{font-size:1.8rem}
+      .quick-btns{gap:6px;margin-bottom:8px}
+      .quick-btn{padding:10px 6px;font-size:1rem;border-radius:12px}
+      .custom-row{margin-bottom:8px}
+      .stat-editor{gap:7px;margin-bottom:12px}
+      .stat-row{padding:7px 12px}
+      .rank-edit-header{margin-bottom:12px}
+      .color-grid{gap:7px;margin-top:6px}
+      .form-group{gap:7px;margin-bottom:10px}
+      .modal-title{margin-bottom:10px;font-size:.95rem}
+      .pin-card{padding:18px 20px;gap:12px}
+    }
     .modal-handle{width:38px;height:4px;background:rgba(255,255,255,.18);border-radius:2px;margin:14px auto 16px}
     .modal-title{font-family:'Lilita One',cursive;font-size:1.05rem;margin-bottom:16px}
     .form-group{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
@@ -276,6 +294,30 @@
     /* color edit in vignette */
     .vignette-color-btn{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.3);cursor:pointer;touch-action:manipulation;background:transparent;display:flex;align-items:center;justify-content:center;font-size:.6rem;opacity:.5}
     .vignette-color-btn:hover{opacity:1}
+
+    /* ── APP PAYSAGE ── */
+    @media (orientation:landscape) and (max-height:500px){
+      #app{max-width:100%}
+      .header{padding:calc(var(--safe-top) + 6px) 16px 2px}
+      .logo{font-size:1.4rem}
+      .logo-sub{display:none}
+      .toolbar{padding:3px 14px 2px;gap:5px}
+      .toolbar-btn{padding:4px 9px;font-size:.68rem}
+      .tabs{margin:4px 12px 0}
+      .tab{padding:6px 4px;font-size:.76rem}
+      .content{padding:8px 12px calc(var(--safe-bot) + 60px)}
+      .vignette{padding:9px 11px;margin-bottom:6px;border-radius:15px}
+      .player-score{font-size:1.5rem}
+      .avatar{width:34px;height:34px;font-size:.9rem;border-radius:10px}
+      .fab{bottom:calc(var(--safe-bot) + 12px);right:14px;width:46px;height:46px;border-radius:14px;font-size:1.3rem}
+      .reset-bar{margin-top:6px;padding-top:6px}
+      .ranking-row{padding:8px 11px;border-radius:13px;margin-bottom:5px}
+      .stat-pill{padding:4px 7px;min-width:34px}
+      .stat-val{font-size:.85rem}
+      .section-label{font-size:.8rem;margin-bottom:7px}
+      .record-card{padding:10px 13px}
+      .record-score{font-size:1.7rem}
+    }
   </style>
 </head>
 <body>
