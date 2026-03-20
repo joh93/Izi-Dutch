@@ -176,6 +176,42 @@
     .pin-toggle{position:absolute;right:13px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;opacity:.4;touch-action:manipulation;color:var(--text)}
     .pin-error{color:var(--coral);font-size:.76rem;font-weight:700;min-height:16px;text-align:center}
     .pin-footer{font-size:.67rem;color:rgba(255,255,255,.12);text-align:center}
+
+
+    /* RANKING EDIT MODAL */
+    .rank-edit-header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+    .stat-editor{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+    .stat-row{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:10px 14px}
+    .stat-row-label{font-size:.75rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;min-width:70px}
+    .stat-row-controls{display:flex;align-items:center;gap:8px;margin-left:auto}
+    .stat-row-val{font-family:'Lilita One',cursive;font-size:1.4rem;min-width:36px;text-align:center;line-height:1}
+    .stat-inc-btn{width:36px;height:36px;border-radius:10px;border:none;font-size:1.1rem;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;transition:all .12s ease;-webkit-user-select:none}
+    .stat-inc-btn:active{transform:scale(.88)}
+    .stat-inc-btn.plus{background:rgba(78,205,196,.2);color:var(--teal);border:1px solid rgba(78,205,196,.4)}
+    .stat-inc-btn.minus{background:rgba(255,107,107,.15);color:var(--coral);border:1px solid rgba(255,107,107,.3)}
+    /* SCORE MODAL */
+    .quick-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:12px}
+    .quick-btn{padding:16px 8px;border-radius:16px;border:none;font-family:'Lilita One',cursive;font-size:1.15rem;cursor:pointer;touch-action:manipulation;transition:all .14s ease;-webkit-user-select:none}
+    .quick-btn:active{transform:scale(.91)}
+    .quick-btn.pos{background:rgba(78,205,196,.16);color:var(--teal);border:1.5px solid rgba(78,205,196,.35)}
+    .quick-btn.neg{background:rgba(255,107,107,.14);color:var(--coral);border:1.5px solid rgba(255,107,107,.3)}
+    .quick-btn.wide{grid-column:span 2}
+    .score-modal-header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+    .score-modal-score{font-family:'Lilita One',cursive;font-size:2.4rem;line-height:1}
+    .custom-row{display:flex;gap:8px;align-items:center;margin-bottom:14px}
+    .custom-val-input{flex:1;padding:12px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:13px;color:#fff;font-family:'Lilita One',cursive;font-size:1.2rem;outline:none;text-align:center;-webkit-appearance:none}
+    .custom-val-input:focus{border-color:var(--accent)}
+    .apply-btn{padding:12px 18px;border-radius:13px;border:none;font-family:'Nunito',sans-serif;font-weight:800;font-size:.85rem;cursor:pointer;touch-action:manipulation;transition:all .14s ease}
+    .apply-btn:active{transform:scale(.93)}
+    .apply-plus{background:linear-gradient(135deg,var(--teal),var(--accent));color:#fff;box-shadow:0 3px 12px rgba(78,205,196,.35)}
+    .apply-minus{background:rgba(255,107,107,.18);color:var(--coral);border:1.5px solid rgba(255,107,107,.3)}
+    .score-divider{height:1px;background:rgba(255,255,255,.06);margin:12px 0}
+    /* vignette tap area */
+    .vignette-tap{cursor:pointer;transition:opacity .12s}
+    .vignette-tap:active{opacity:.75}
+    /* color edit in vignette */
+    .vignette-color-btn{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.3);cursor:pointer;touch-action:manipulation;background:transparent;display:flex;align-items:center;justify-content:center;font-size:.6rem;opacity:.5}
+    .vignette-color-btn:hover{opacity:1}
   </style>
 </head>
 <body>
@@ -257,16 +293,6 @@
 
   <div class="content">
     <div class="page active" id="page-comptage">
-      <div class="step-bar">
-        <span class="step-label">Incrément</span>
-        <div class="step-chips">
-          <button class="step-chip active" data-step="1" onclick="setStep(1,this)">1</button>
-          <button class="step-chip" data-step="5" onclick="setStep(5,this)">5</button>
-          <button class="step-chip" data-step="10" onclick="setStep(10,this)">10</button>
-          <button class="step-chip" data-step="25" onclick="setStep(25,this)">25</button>
-        </div>
-        <input class="step-custom" type="number" placeholder="?" id="custom-step" oninput="setCustomStep(this.value)" min="1"/>
-      </div>
       <div id="comptage-list"></div>
       <div class="reset-bar" id="reset-bar" style="display:none">
         <button class="btn btn-ghost btn-sm" onclick="resetScores()">🔄 Réinitialiser</button>
@@ -287,6 +313,104 @@
   </div>
 
   <button class="fab" onclick="openAddModal()">＋</button>
+</div>
+
+
+<!-- Modal: score rapide -->
+<div class="overlay hidden" id="modal-score" onclick="closeScoreModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="score-modal-header">
+      <div id="sm-avatar" class="avatar"></div>
+      <div>
+        <div id="sm-name" style="font-weight:900;font-size:1rem"></div>
+        <div class="score-modal-score" id="sm-score">0</div>
+      </div>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost btn-sm" onclick="openColorEdit()" style="flex-shrink:0">🎨 Couleur</button>
+    </div>
+
+    <div class="quick-btns" id="sm-quick-pos"></div>
+
+    <div class="custom-row">
+      <input class="custom-val-input" id="sm-custom" type="number" placeholder="Valeur..." min="1" max="9999"/>
+      <button class="apply-btn apply-minus" onclick="applyCustom(-1)">− Retirer</button>
+      <button class="apply-btn apply-plus" onclick="applyCustom(1)">+ Ajouter</button>
+    </div>
+
+    <div class="score-divider"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="openHistory(currentScorePlayerId)">📋 Historique</button>
+      <button class="btn btn-danger btn-sm" style="flex:1" onclick="confirmRemovePlayer()">🗑️ Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: changer couleur -->
+<div class="overlay hidden" id="modal-color-edit" onclick="closeColorEdit(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🎨 Changer la couleur</div>
+    <div class="color-grid" id="color-grid-edit"></div>
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeColorEdit()">Annuler</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveColorEdit()">Valider</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: édition classement joueur -->
+<div class="overlay hidden" id="modal-rank-edit" onclick="closeRankEdit(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="rank-edit-header">
+      <div id="re-avatar" class="avatar" style="width:44px;height:44px;font-size:1.2rem"></div>
+      <div>
+        <div id="re-name" style="font-weight:900;font-size:1rem"></div>
+        <div style="font-size:.7rem;color:var(--muted)">Modifier les statistiques</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="openColorEditFromRank()">🎨</button>
+    </div>
+    <div class="stat-editor">
+      <div class="stat-row">
+        <div>
+          <div class="stat-row-label" style="color:rgba(255,255,255,.5)">🃏 Parties</div>
+          <div style="font-size:.65rem;color:rgba(255,255,255,.2);margin-top:2px">Total joué</div>
+        </div>
+        <div class="stat-row-controls">
+          <button class="stat-inc-btn minus" onclick="reInc('parties',-1)">−</button>
+          <div class="stat-row-val" id="re-parties" style="color:#fff">0</div>
+          <button class="stat-inc-btn plus" onclick="reInc('parties',1)">+</button>
+        </div>
+      </div>
+      <div class="stat-row">
+        <div>
+          <div class="stat-row-label" style="color:var(--teal)">🏆 Victoires</div>
+          <div style="font-size:.65rem;color:rgba(255,255,255,.2);margin-top:2px">Parties gagnées</div>
+        </div>
+        <div class="stat-row-controls">
+          <button class="stat-inc-btn minus" onclick="reInc('victoires',-1)">−</button>
+          <div class="stat-row-val" id="re-victoires" style="color:var(--teal)">0</div>
+          <button class="stat-inc-btn plus" onclick="reInc('victoires',1)">+</button>
+        </div>
+      </div>
+      <div class="stat-row">
+        <div>
+          <div class="stat-row-label" style="color:var(--coral)">💀 Défaites</div>
+          <div style="font-size:.65rem;color:rgba(255,255,255,.2);margin-top:2px">Parties perdues</div>
+        </div>
+        <div class="stat-row-controls">
+          <button class="stat-inc-btn minus" onclick="reInc('defaites',-1)">−</button>
+          <div class="stat-row-val" id="re-defaites" style="color:var(--coral)">0</div>
+          <button class="stat-inc-btn plus" onclick="reInc('defaites',1)">+</button>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-danger btn-sm" style="flex:1" onclick="removeClassementPlayerFromModal()">🗑️ Supprimer</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveRankEdit()">✅ Enregistrer</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -454,46 +578,132 @@ window.switchTab = function(tab) {
 };
 
 /* ── STEP ── */
-window.setStep = function(v,btn) { curStep=v; customStep=null; $('custom-step').value=''; document.querySelectorAll('.step-chip').forEach(c=>c.classList.remove('active')); if(btn)btn.classList.add('active'); };
-window.setCustomStep = function(v) { const n=parseInt(v); customStep=(!isNaN(n)&&n>0)?n:null; document.querySelectorAll('.step-chip').forEach(c=>c.classList.remove('active')); };
-const getStep = ()=>customStep||curStep;
+// step functions removed - now handled per modal
 
 /* ── COMPTAGE ── */
-window.addScore = function(id, delta) {
+const QUICK_VALUES = [5, 10, 15, 20, 50, 100, 200];
+let currentScorePlayerId = null;
+let colorEditTarget = null;
+let colorEditId = null;
+let selectedEditColor = null;
+
+function addScore(id, delta) {
   const pl = localState.players.find(p=>p.id===id); if(!pl) return;
   pl.score += delta;
   localState.history.push({playerId:id,playerName:pl.name,playerColor:pl.color,delta,scoreAfter:pl.score,time:nowStr()});
+  saveLocal();
+  const smS = $('sm-score'); if(smS) smS.textContent = pl.score;
+  const el=$('score-'+id); if(el){ el.style.transform='scale(1.3)'; setTimeout(()=>el.style.transform='',180); }
+  renderComptage();
+}
+
+window.openScoreModal = function(id) {
+  const pl = localState.players.find(p=>p.id===id); if(!pl) return;
+  currentScorePlayerId = id;
+  $('sm-avatar').style.background = pl.color;
+  $('sm-avatar').textContent = pl.name[0].toUpperCase();
+  $('sm-name').textContent = pl.name;
+  $('sm-name').style.color = pl.color;
+  $('sm-score').textContent = pl.score;
+  $('sm-custom').value = '';
+  $('sm-quick-pos').innerHTML = QUICK_VALUES.map((v,i) =>
+    `<button class="quick-btn pos${i===6?' wide':''}" onclick="applyQuick(${v})">+${v}</button>`
+  ).join('');
+  $('modal-score').classList.remove('hidden');
+};
+window.closeScoreModal = function(e) {
+  if(!e||e.target===$('modal-score')){ $('modal-score').classList.add('hidden'); currentScorePlayerId=null; }
+};
+window.applyQuick = function(val) {
+  if(!currentScorePlayerId) return;
+  addScore(currentScorePlayerId, val);
+  showToast(`+${val} pts !`);
+};
+window.applyCustom = function(sign) {
+  if(!currentScorePlayerId) return;
+  const raw = parseInt($('sm-custom').value);
+  if(isNaN(raw)||raw<=0){ showToast('⚠️ Entre une valeur valide'); return; }
+  addScore(currentScorePlayerId, sign*raw);
+  showToast(`${sign>0?'+':'-'}${raw} pts !`);
+  $('sm-custom').value='';
+};
+window.confirmRemovePlayer = function() {
+  const id=currentScorePlayerId; if(!id) return;
+  const pl=localState.players.find(p=>p.id===id); if(!pl) return;
+  if(!confirm(`Supprimer ${pl.name} ?`)) return;
+  localState.players=localState.players.filter(p=>p.id!==id);
+  localState.history=localState.history.filter(h=>h.playerId!==id);
   saveLocal(); renderComptage();
-  const el=$('score-'+id); if(el){el.style.transform='scale(1.3)';setTimeout(()=>el.style.transform='scale(1)',150);}
+  $('modal-score').classList.add('hidden'); currentScorePlayerId=null;
 };
 window.resetScores = function() { if(!confirm('Réinitialiser tous les scores ?')) return; localState.players.forEach(p=>p.score=0); saveLocal(); renderComptage(); showToast('✅ Scores remis à zéro'); };
 window.clearHistory = function() { if(!confirm('Vider l\'historique ?')) return; localState.history=[]; saveLocal(); showToast('🗑️ Historique vidé'); };
-window.removeComptagePlayer = function(id) { localState.players=localState.players.filter(p=>p.id!==id); localState.history=localState.history.filter(h=>h.playerId!==id); saveLocal(); renderComptage(); };
+
+/* ── COLOR EDIT ── */
+window.openColorEdit = function() {
+  const pl = localState.players.find(p=>p.id===currentScorePlayerId);
+  colorEditTarget='comptage'; colorEditId=currentScorePlayerId;
+  selectedEditColor = pl ? pl.color : COLORS[0];
+  buildColorGridEdit();
+  $('modal-color-edit').classList.remove('hidden');
+};
+window.openColorEditRanking = function(id) {
+  const pl = rankingPlayers.find(p=>p.id===id);
+  colorEditTarget='classement'; colorEditId=id;
+  selectedEditColor = pl ? pl.color : COLORS[0];
+  buildColorGridEdit();
+  $('modal-color-edit').classList.remove('hidden');
+};
+function buildColorGridEdit() {
+  $('color-grid-edit').innerHTML = COLORS.map(c =>
+    `<div class="color-dot${c===selectedEditColor?' selected':''}" style="background:${c}" onclick="selectEditColor('${c}')"></div>`
+  ).join('');
+}
+window.selectEditColor = function(color) {
+  selectedEditColor=color;
+  document.querySelectorAll('#color-grid-edit .color-dot').forEach(d=>
+    d.classList.toggle('selected', d.style.background===color||d.style.backgroundColor===color)
+  );
+};
+window.saveColorEdit = async function() {
+  if(!selectedEditColor||!colorEditId) return;
+  if(colorEditTarget==='comptage') {
+    const pl=localState.players.find(p=>p.id===colorEditId);
+    if(pl){ pl.color=selectedEditColor; saveLocal(); renderComptage(); }
+    if($('sm-avatar')){ $('sm-avatar').style.background=selectedEditColor; }
+    if($('sm-name'))  { $('sm-name').style.color=selectedEditColor; }
+  } else {
+    const pl=rankingPlayers.find(p=>p.id===colorEditId);
+    if(pl){
+      pl.color=selectedEditColor;
+      if(isDemo){ saveDemoRanking(); renderClassement(); }
+      else await fbUpdate(colorEditId,{color:selectedEditColor});
+    }
+  }
+  $('modal-color-edit').classList.add('hidden');
+  showToast('🎨 Couleur mise à jour !');
+};
+window.closeColorEdit = function(e) {
+  if(!e||e.target===$('modal-color-edit')) $('modal-color-edit').classList.add('hidden');
+};
 
 function renderComptage() {
   const list=$('comptage-list'), rb=$('reset-bar');
   if(!localState.players.length){ list.innerHTML=`<div class="empty"><div class="empty-icon">🃏</div>Aucun joueur — appuie sur ＋ !</div>`; rb.style.display='none'; return; }
   rb.style.display='flex';
-  const s=getStep(), sorted=[...localState.players].sort((a,b)=>a.score-b.score);
+  const sorted=[...localState.players].sort((a,b)=>a.score-b.score);
   list.innerHTML=sorted.map((pl,i)=>{
     const isL=i===0&&localState.players.length>1;
-    return `<div class="vignette${isL?' leader':''}" style="background:${pl.color}${isL?'22':'0d'};border:1.5px solid ${pl.color}${isL?'44':'1a'}">
+    return `<div class="vignette vignette-tap${isL?' leader':''}"
+         style="background:${pl.color}${isL?'22':'0d'};border:1.5px solid ${pl.color}${isL?'44':'1a'}"
+         onclick="openScoreModal('${pl.id}')">
       <div class="rank-badge">#${i+1}</div>
       <div class="avatar" style="background:${pl.color}">${esc(pl.name[0].toUpperCase())}</div>
       <div class="player-info">
         <div class="player-name" style="color:${pl.color}">${esc(pl.name)}${isL?'<span class="leader-badge">🏆 Leader</span>':''}</div>
         <div class="player-score" id="score-${pl.id}">${pl.score}</div>
       </div>
-      <div class="vignette-actions">
-        <div class="score-btns">
-          <button class="score-btn minus" onclick="addScore('${pl.id}',-${s})">−</button>
-          <button class="score-btn plus" onclick="addScore('${pl.id}',${s})">+</button>
-        </div>
-        <div style="display:flex;gap:5px">
-          <button class="btn btn-ghost btn-xs" onclick="openHistory('${pl.id}')">📋</button>
-          <button class="btn btn-danger btn-xs" onclick="removeComptagePlayer('${pl.id}')">✕</button>
-        </div>
-      </div>
+      <div style="flex-shrink:0;color:rgba(255,255,255,.25);font-size:1.3rem">›</div>
     </div>`;
   }).join('');
 }
@@ -520,28 +730,78 @@ function renderClassement() {
   const sorted=[...rankingPlayers].sort((a,b)=>(b.victoires||0)-(a.victoires||0)||(a.defaites||0)-(b.defaites||0));
   const medals=['🥇','🥈','🥉'];
   list.innerHTML=sorted.map((pl,i)=>{
-    const v=pl.victoires||0, d=pl.defaites||0, p=v+d;
-    const pct=p===0?0:Math.round(v/p*100);
-    return `<div class="ranking-row">
+    const v=pl.victoires||0, d=pl.defaites||0, pa=pl.parties||0;
+    const pct=pa===0?0:Math.round(v/pa*100);
+    return `<div class="ranking-row vignette-tap" onclick="openRankEdit('${pl.id}')">
       <div class="rank-num">${medals[i]||'#'+(i+1)}</div>
       <div class="avatar" style="background:${pl.color};width:40px;height:40px;font-size:1rem">${esc((pl.name||'?')[0].toUpperCase())}</div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:900;font-size:.9rem;color:${pl.color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(pl.name)}</div>
-        <div style="font-size:.68rem;color:var(--muted)">${p} partie${p!==1?'s':''} · ${pct}%</div>
+        <div style="font-size:.68rem;color:var(--muted)">${pa} partie${pa!==1?'s':''} · ${pct}% victoires</div>
         <div class="win-bar"><div class="win-fill" style="width:${pct}%"></div></div>
       </div>
       <div class="stat-pills">
+        <div class="stat-pill"><div class="stat-val" style="color:rgba(255,255,255,.6)">${pa}</div><div class="stat-lbl">P</div></div>
         <div class="stat-pill"><div class="stat-val" style="color:var(--teal)">${v}</div><div class="stat-lbl">V</div></div>
         <div class="stat-pill"><div class="stat-val" style="color:var(--coral)">${d}</div><div class="stat-lbl">D</div></div>
       </div>
-      <div class="rank-actions">
-        <button class="btn btn-teal btn-xs" onclick="incClassement('${pl.id}','victoires')">+V</button>
-        <button class="btn btn-danger btn-xs" onclick="incClassement('${pl.id}','defaites')">+D</button>
-        <button class="btn btn-danger btn-xs" onclick="removeClassementPlayer('${pl.id}')">✕</button>
-      </div>
+      <div style="flex-shrink:0;color:rgba(255,255,255,.25);font-size:1.3rem;margin-left:4px">›</div>
     </div>`;
   }).join('');
 }
+
+
+/* ── RANK EDIT MODAL ── */
+let rePlayerId = null;
+let reState = {};
+
+window.openRankEdit = function(id) {
+  const pl = rankingPlayers.find(p=>p.id===id); if(!pl) return;
+  rePlayerId = id;
+  reState = { parties: pl.parties||0, victoires: pl.victoires||0, defaites: pl.defaites||0 };
+  $('re-avatar').style.background = pl.color;
+  $('re-avatar').textContent = pl.name[0].toUpperCase();
+  $('re-name').textContent = pl.name;
+  $('re-name').style.color = pl.color;
+  updateReDisplay();
+  $('modal-rank-edit').classList.remove('hidden');
+};
+window.closeRankEdit = function(e) {
+  if(!e||e.target===$('modal-rank-edit')) $('modal-rank-edit').classList.add('hidden');
+};
+window.reInc = function(field, delta) {
+  reState[field] = Math.max(0, (reState[field]||0) + delta);
+  updateReDisplay();
+};
+function updateReDisplay() {
+  $('re-parties').textContent   = reState.parties;
+  $('re-victoires').textContent = reState.victoires;
+  $('re-defaites').textContent  = reState.defaites;
+}
+window.saveRankEdit = async function() {
+  if(!rePlayerId) return;
+  const pl = rankingPlayers.find(p=>p.id===rePlayerId); if(!pl) return;
+  pl.parties   = reState.parties;
+  pl.victoires = reState.victoires;
+  pl.defaites  = reState.defaites;
+  if(isDemo){ saveDemoRanking(); renderClassement(); }
+  else await fbUpdate(rePlayerId, { parties: pl.parties, victoires: pl.victoires, defaites: pl.defaites });
+  $('modal-rank-edit').classList.add('hidden');
+  showToast('✅ Statistiques mises à jour !');
+};
+window.removeClassementPlayerFromModal = async function() {
+  if(!rePlayerId) return;
+  const pl = rankingPlayers.find(p=>p.id===rePlayerId); if(!pl) return;
+  if(!confirm(`Supprimer ${pl.name} du classement ?`)) return;
+  rankingPlayers = rankingPlayers.filter(p=>p.id!==rePlayerId);
+  if(isDemo){ saveDemoRanking(); renderClassement(); }
+  else await fbRemove(rePlayerId);
+  $('modal-rank-edit').classList.add('hidden');
+  showToast('🗑️ Joueur supprimé');
+};
+window.openColorEditFromRank = function() {
+  openColorEditRanking(rePlayerId);
+};
 
 /* ── COLOR GRID ── */
 function buildColorGrid(cid) {
@@ -618,7 +878,7 @@ window.addEventListener('appinstalled', () => { showToast('🎉 Izi Dutch instal
 if('serviceWorker' in navigator) window.addEventListener('load', ()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 
 document.addEventListener('keydown', e => {
-  if(e.key==='Escape') ['modal-add','modal-history','modal-settings'].forEach(id=>$(id).classList.add('hidden'));
+  if(e.key==='Escape') ['modal-add','modal-history','modal-settings','modal-score','modal-color-edit','modal-rank-edit'].forEach(id=>$(id).classList.add('hidden'));
 });
 
 /* ── PIN ── */
