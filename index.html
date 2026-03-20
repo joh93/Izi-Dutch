@@ -184,6 +184,14 @@
     .pin-footer{font-size:.67rem;color:rgba(255,255,255,.12);text-align:center}
 
 
+
+    /* RECORD */
+    .record-section{margin-bottom:18px}
+    .record-card{background:linear-gradient(135deg,rgba(255,230,109,.08),rgba(255,107,107,.06));border:1px solid rgba(255,230,109,.2);border-radius:20px;padding:14px 16px}
+    .record-crown{font-size:2rem;line-height:1}
+    .record-score{font-family:'Lilita One',cursive;font-size:2.2rem;color:var(--gold);line-height:1}
+    .record-holder{font-weight:800;font-size:.9rem;margin-top:2px}
+    .record-empty{font-size:.82rem;color:rgba(255,255,255,.25);font-style:italic}
     /* RANKING EDIT MODAL */
     .rank-edit-header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
     .stat-editor{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
@@ -307,6 +315,18 @@
     </div>
 
     <div class="page" id="page-classement">
+      <!-- RECORD -->
+      <div class="record-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div class="section-label" style="margin:0">🏅 Record de points</div>
+          <button class="btn btn-ghost btn-xs" onclick="openRecordModal()">✏️ Modifier</button>
+        </div>
+        <div class="record-card" id="record-card">
+          <div class="record-empty">Aucun record enregistré — appuie sur Modifier</div>
+        </div>
+      </div>
+
+      <!-- CLASSEMENT PARTAGE -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div class="section-label" style="margin:0">🏆 Classement partagé</div>
         <div style="display:flex;align-items:center;gap:5px;font-size:.68rem;color:var(--muted)">
@@ -333,7 +353,10 @@
         <div class="score-modal-score" id="sm-score">0</div>
       </div>
       <div style="flex:1"></div>
-      <button class="btn btn-ghost btn-sm" onclick="openColorEdit()" style="flex-shrink:0">🎨 Couleur</button>
+      <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
+        <button class="btn btn-ghost btn-sm" onclick="openColorEdit()">🎨 Couleur</button>
+        <button class="btn btn-ghost btn-sm" onclick="openRenameModal()">✏️ Pseudo</button>
+      </div>
     </div>
 
     <div class="quick-btns" id="sm-quick-pos"></div>
@@ -415,6 +438,42 @@
     <div style="display:flex;gap:8px">
       <button class="btn btn-danger btn-sm" style="flex:1" onclick="removeClassementPlayerFromModal()">🗑️ Supprimer</button>
       <button class="btn btn-primary" style="flex:1" onclick="saveRankEdit()">✅ Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: record de points -->
+<div class="overlay hidden" id="modal-record" onclick="closeRecordModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🏅 Record de points</div>
+    <div class="form-group">
+      <div class="form-label">Pseudo du détenteur</div>
+      <input class="input" id="record-name" placeholder="Nom du joueur..." maxlength="20"/>
+      <div class="form-label">Score record</div>
+      <input class="input" id="record-score" type="number" placeholder="Ex: 1250" min="0"/>
+    </div>
+    <div id="record-error" style="color:var(--coral);font-size:.75rem;display:none"></div>
+    <div style="display:flex;gap:10px;margin-top:6px">
+      <button class="btn btn-danger btn-sm" onclick="clearRecord()">🗑️ Effacer</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost" onclick="closeRecordModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveRecord()">✅ Valider</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: renommer joueur comptage -->
+<div class="overlay hidden" id="modal-rename" onclick="closeRenameModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">✏️ Changer le pseudo</div>
+    <input class="input" id="rename-input" placeholder="Nouveau pseudo..." maxlength="20"
+           onkeydown="if(event.key==='Enter')saveRename()"/>
+    <div id="rename-error" style="color:var(--coral);font-size:.75rem;margin-top:8px;display:none"></div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeRenameModal()">Annuler</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveRename()">Valider</button>
     </div>
   </div>
 </div>
@@ -601,7 +660,7 @@ window.useDemo = function() {
 function startApp() {
   $('setup-screen').classList.add('hidden');
   $('app').style.display='flex';
-  loadLocal(); switchTab('comptage');
+  loadLocal(); loadRecord(); switchTab('comptage');
 }
 function saveDemoRanking() { if(isDemo) localStorage.setItem(LS_DEMO, JSON.stringify(rankingPlayers)); }
 
@@ -611,7 +670,7 @@ window.switchTab = function(tab) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   $('tab-'+tab).classList.add('active'); $('page-'+tab).classList.add('active');
-  if(tab==='comptage') renderComptage(); else renderClassement();
+  if(tab==='comptage') renderComptage(); else { renderClassement(); renderRecord(); }
 };
 
 /* ── STEP ── */
@@ -655,6 +714,7 @@ window.applyQuick = function(val) {
   if(!currentScorePlayerId) return;
   addScore(currentScorePlayerId, val);
   showToast(`+${val} pts !`);
+  $('modal-score').classList.add('hidden'); currentScorePlayerId=null;
 };
 window.applyCustom = function(sign) {
   if(!currentScorePlayerId) return;
@@ -663,6 +723,7 @@ window.applyCustom = function(sign) {
   addScore(currentScorePlayerId, sign*raw);
   showToast(`${sign>0?'+':'-'}${raw} pts !`);
   $('sm-custom').value='';
+  $('modal-score').classList.add('hidden'); currentScorePlayerId=null;
 };
 window.confirmRemovePlayer = function() {
   const id=currentScorePlayerId; if(!id) return;
@@ -672,6 +733,36 @@ window.confirmRemovePlayer = function() {
   localState.history=localState.history.filter(h=>h.playerId!==id);
   saveLocal(); renderComptage();
   $('modal-score').classList.add('hidden'); currentScorePlayerId=null;
+};
+
+/* ── RENAME ── */
+window.openRenameModal = function() {
+  const pl = localState.players.find(p=>p.id===currentScorePlayerId); if(!pl) return;
+  $('rename-input').value = pl.name;
+  $('rename-error').style.display='none';
+  $('modal-rename').classList.remove('hidden');
+  setTimeout(()=>{ $('rename-input').focus(); $('rename-input').select(); }, 300);
+};
+window.closeRenameModal = function(e) {
+  if(!e||e.target===$('modal-rename')) $('modal-rename').classList.add('hidden');
+};
+window.saveRename = function() {
+  const newName = ($('rename-input').value||'').trim();
+  const errEl = $('rename-error');
+  if(!newName){ errEl.textContent='Entre un pseudo.'; errEl.style.display='block'; return; }
+  if(localState.players.some(p=>p.id!==currentScorePlayerId && p.name.toLowerCase()===newName.toLowerCase())){
+    errEl.textContent='Ce pseudo est déjà utilisé.'; errEl.style.display='block'; return;
+  }
+  const pl = localState.players.find(p=>p.id===currentScorePlayerId); if(!pl) return;
+  pl.name = newName;
+  // Mettre à jour l'historique aussi
+  localState.history.forEach(h=>{ if(h.playerId===currentScorePlayerId) h.playerName=newName; });
+  saveLocal(); renderComptage();
+  // Mettre à jour l'affichage de la modale score
+  $('sm-name').textContent = newName;
+  $('sm-avatar').textContent = newName[0].toUpperCase();
+  $('modal-rename').classList.add('hidden');
+  showToast('✏️ Pseudo mis à jour !');
 };
 window.resetScores = function() { if(!confirm('Réinitialiser tous les scores ?')) return; localState.players.forEach(p=>p.score=0); saveLocal(); renderComptage(); showToast('✅ Scores remis à zéro'); };
 window.clearHistory = function() { if(!confirm('Vider l\'historique ?')) return; localState.history=[]; saveLocal(); showToast('🗑️ Historique vidé'); };
@@ -788,6 +879,60 @@ function renderClassement() {
 }
 
 
+
+/* ── RECORD DE POINTS ── */
+const LS_RECORD = 'izidutch_record';
+let recordData = null;
+
+function loadRecord() {
+  try { recordData = JSON.parse(localStorage.getItem(LS_RECORD)||'null'); } catch(e){ recordData=null; }
+}
+function saveRecordData() {
+  try { localStorage.setItem(LS_RECORD, JSON.stringify(recordData)); } catch(e){} 
+}
+function renderRecord() {
+  const card = $('record-card'); if(!card) return;
+  if(!recordData || !recordData.name) {
+    card.innerHTML='<div class="record-empty">Aucun record enregistré — appuie sur Modifier</div>';
+    return;
+  }
+  card.innerHTML=`
+    <div style="display:flex;align-items:center;gap:14px">
+      <div class="record-crown">🏅</div>
+      <div>
+        <div class="record-score">${recordData.score}</div>
+        <div class="record-holder" style="color:var(--gold)">${esc(recordData.name)}</div>
+        <div style="font-size:.65rem;color:rgba(255,255,255,.25);margin-top:2px">Record de points</div>
+      </div>
+    </div>`;
+}
+window.openRecordModal = function() {
+  $('record-name').value = recordData ? recordData.name : '';
+  $('record-score').value = recordData ? recordData.score : '';
+  $('record-error').style.display='none';
+  $('modal-record').classList.remove('hidden');
+  setTimeout(()=>$('record-name').focus(), 300);
+};
+window.closeRecordModal = function(e) {
+  if(!e||e.target===$('modal-record')) $('modal-record').classList.add('hidden');
+};
+window.saveRecord = function() {
+  const name = ($('record-name').value||'').trim();
+  const score = parseInt($('record-score').value);
+  const errEl = $('record-error');
+  if(!name){ errEl.textContent='Entre un pseudo.'; errEl.style.display='block'; return; }
+  if(isNaN(score)||score<0){ errEl.textContent='Entre un score valide.'; errEl.style.display='block'; return; }
+  recordData = { name, score };
+  saveRecordData(); renderRecord();
+  $('modal-record').classList.add('hidden');
+  showToast('🏅 Record enregistré !');
+};
+window.clearRecord = function() {
+  if(!confirm('Effacer le record ?')) return;
+  recordData = null; saveRecordData(); renderRecord();
+  $('modal-record').classList.add('hidden');
+  showToast('🗑️ Record effacé');
+};
 /* ── RANK EDIT MODAL ── */
 let rePlayerId = null;
 let reState = {};
@@ -970,7 +1115,7 @@ window.applyUpdate = function() {
 };
 
 document.addEventListener('keydown', e => {
-  if(e.key==='Escape') ['modal-add','modal-history','modal-settings','modal-score','modal-color-edit','modal-rank-edit','modal-settings-pin'].forEach(id=>$(id).classList.add('hidden'));
+  if(e.key==='Escape') ['modal-add','modal-history','modal-settings','modal-score','modal-color-edit','modal-rank-edit','modal-settings-pin','modal-rename','modal-record'].forEach(id=>$(id).classList.add('hidden'));
 });
 
 /* ── PIN ── */
