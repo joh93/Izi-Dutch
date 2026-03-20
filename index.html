@@ -466,6 +466,24 @@
   </div>
 </div>
 
+<!-- Modal: PIN paramètres -->
+<div class="overlay hidden" id="modal-settings-pin" onclick="closeSettingsPinModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🔒 Accès paramètres</div>
+    <p style="font-size:.8rem;color:var(--muted);margin-bottom:14px">Entre le code administrateur pour accéder aux paramètres Firebase.</p>
+    <div class="pin-input-wrap" style="margin-bottom:10px">
+      <input class="pin-input" id="settings-pin-input" type="password" placeholder="••••••" maxlength="10" autocomplete="off" onkeydown="if(event.key==='Enter')checkSettingsPin()" style="font-size:1rem;letter-spacing:5px"/>
+      <button class="pin-toggle" id="settings-pin-toggle" onclick="toggleSettingsPinVis()" type="button">👁️</button>
+    </div>
+    <div id="settings-pin-error" style="color:var(--coral);font-size:.75rem;font-weight:700;min-height:16px;text-align:center;margin-bottom:12px"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeSettingsPinModal()">Annuler</button>
+      <button class="btn btn-primary" style="flex:1" onclick="checkSettingsPin()">Accéder</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: paramètres -->
 <div class="overlay hidden" id="modal-settings" onclick="closeSettings(event)">
   <div class="modal">
@@ -866,13 +884,39 @@ window.closeHistoryModal = function(e) { if(!e||e.target===$('modal-history')) $
 
 /* ── SETTINGS ── */
 window.openSettings = function() {
-  try {
-    const cfg=JSON.parse(localStorage.getItem(LS_CFG)||'{}');
-    $('settings-info').innerHTML = cfg._isDemo
-      ? '<strong>Mode :</strong> Démo locale (pas de partage en ligne)'
-      : `<strong>Mode :</strong> Firebase connecté<br><strong>Projet :</strong> ${cfg.projectId||'—'}<br><strong>DB URL :</strong> ${(cfg.databaseURL||'').replace('https://','').slice(0,40)}...`;
-  } catch(e){}
-  $('modal-settings').classList.remove('hidden');
+  $('modal-settings-pin').classList.remove('hidden');
+  $('settings-pin-input').value='';
+  $('settings-pin-error').textContent='';
+  settingsPinVisible=false;
+  $('settings-pin-input').type='password';
+  setTimeout(()=>$('settings-pin-input').focus(), 350);
+};
+window.checkSettingsPin = function() {
+  const val = ($('settings-pin-input').value||'').trim();
+  if(val === SETTINGS_PIN) {
+    $('modal-settings-pin').classList.add('hidden');
+    // Affiche les vraies infos
+    try {
+      const saved=localStorage.getItem(LS_CFG);
+      const cfg = saved ? JSON.parse(saved) : DEFAULT_CFG;
+      $('settings-info').innerHTML = cfg._isDemo
+        ? '<strong>Mode :</strong> Démo locale (pas de partage en ligne)'
+        : `<strong>Mode :</strong> Firebase connecté<br><strong>Projet :</strong> ${cfg.projectId||DEFAULT_CFG.projectId}<br><strong>DB URL :</strong> ${(cfg.databaseURL||DEFAULT_CFG.databaseURL).replace('https://','').slice(0,45)}`;
+    } catch(e){}
+    $('modal-settings').classList.remove('hidden');
+  } else {
+    $('settings-pin-error').textContent='❌ Code incorrect';
+    $('settings-pin-input').classList.add('err');
+    setTimeout(()=>{ $('settings-pin-input').classList.remove('err'); $('settings-pin-input').value=''; }, 800);
+  }
+};
+window.toggleSettingsPinVis = function() {
+  settingsPinVisible=!settingsPinVisible;
+  $('settings-pin-input').type=settingsPinVisible?'text':'password';
+  $('settings-pin-toggle').textContent=settingsPinVisible?'🙈':'👁️';
+};
+window.closeSettingsPinModal = function(e) {
+  if(!e||e.target===$('modal-settings-pin')) $('modal-settings-pin').classList.add('hidden');
 };
 window.closeSettings = function(e) { if(!e||e.target===$('modal-settings')) $('modal-settings').classList.add('hidden'); };
 window.reconfigure = function() { localStorage.removeItem(LS_CFG); location.reload(); };
@@ -919,7 +963,7 @@ window.applyUpdate = function() {
 };
 
 document.addEventListener('keydown', e => {
-  if(e.key==='Escape') ['modal-add','modal-history','modal-settings','modal-score','modal-color-edit','modal-rank-edit'].forEach(id=>$(id).classList.add('hidden'));
+  if(e.key==='Escape') ['modal-add','modal-history','modal-settings','modal-score','modal-color-edit','modal-rank-edit','modal-settings-pin'].forEach(id=>$(id).classList.add('hidden'));
 });
 
 /* ── PIN ── */
@@ -960,16 +1004,36 @@ function updatePinDots(error) {
 $('pin-input').addEventListener('input', () => updatePinDots(false));
 updatePinDots(false);
 
+/* ── CONFIG FIREBASE PAR DÉFAUT ── */
+const DEFAULT_CFG = {
+  apiKey:      "AIzaSyDPmkhmU6rixtzNS5wJwCJmxlSDgtz39vQ",
+  databaseURL: "https://izidutch-default-rtdb.firebaseio.com",
+  projectId:   "izidutch",
+  appId:       "1:907697744382:web:b820fa9545525e591b38af",
+  authDomain:  "izidutch.firebaseapp.com",
+  storageBucket: "izidutch.appspot.com",
+  messagingSenderId: "907697744382"
+};
+
+const SETTINGS_PIN = '170302';
+let settingsPinVisible = false;
+
 function afterPin() {
   try {
-    const saved=localStorage.getItem(LS_CFG);
-    if(saved) {
-      const cfg=JSON.parse(saved);
-      if(cfg._isDemo) { window.useDemo(); }
-      else if(initFirebase(cfg)) { isDemo=false; startApp(); }
+    // Utilise la config sauvegardée si elle existe, sinon la config par défaut
+    const saved = localStorage.getItem(LS_CFG);
+    const cfg = saved ? JSON.parse(saved) : DEFAULT_CFG;
+    if(cfg._isDemo) { window.useDemo(); }
+    else if(initFirebase(cfg)) { isDemo=false; startApp(); }
+    else {
+      // Fallback sur la config par défaut si la config sauvegardée échoue
+      if(saved && initFirebase(DEFAULT_CFG)) { isDemo=false; startApp(); }
       else $('setup-screen').classList.remove('hidden');
     }
-  } catch(e) { /* show setup screen */ }
+  } catch(e) {
+    if(initFirebase(DEFAULT_CFG)) { isDemo=false; startApp(); }
+    else $('setup-screen').classList.remove('hidden');
+  }
 }
 
 /* ── BOOT ── */
