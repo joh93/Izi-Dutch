@@ -297,6 +297,7 @@
       <div class="sdot" id="sdot"></div>
       <span id="status-text">Connexion...</span>
       <button onclick="openSettings()" style="background:none;border:none;cursor:pointer;font-size:.85rem;margin-left:5px;opacity:.35;touch-action:manipulation" title="Paramètres">⚙️</button>
+      <button onclick="toggleFullscreen()" id="fs-btn" style="background:none;border:none;cursor:pointer;font-size:.85rem;margin-left:2px;opacity:.35;touch-action:manipulation" title="Plein écran">⛶</button>
     </div>
   </div>
 
@@ -1085,6 +1086,30 @@ window.closeSettingsPinModal = function(e) {
 window.closeSettings = function(e) { if(!e||e.target===$('modal-settings')) $('modal-settings').classList.add('hidden'); };
 window.reconfigure = function() { localStorage.removeItem(LS_CFG); location.reload(); };
 window.confirmResetAll = function() { if(!confirm('Effacer toutes les données locales ?')) return; localStorage.clear(); location.reload(); };
+
+
+/* ── FULLSCREEN ── */
+window.toggleFullscreen = function() {
+  const btn = $('fs-btn');
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen().catch(() => {});
+  }
+};
+document.addEventListener('fullscreenchange', () => {
+  const btn = $('fs-btn');
+  if(!btn) return;
+  if(document.fullscreenElement) {
+    btn.textContent = '⛶';
+    btn.title = 'Quitter le plein écran';
+    btn.style.opacity = '.7';
+  } else {
+    btn.textContent = '⛶';
+    btn.title = 'Plein écran';
+    btn.style.opacity = '.35';
+  }
+});
 
 /* ── PWA INSTALL ── */
 window.addEventListener('beforeinstallprompt', e => {
