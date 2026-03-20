@@ -615,6 +615,12 @@ function initFirebase(cfg) {
       if(currentTab==='classement') renderClassement();
       setStatus('online');
     }, () => setStatus('offline'));
+    // Écoute du record en temps réel
+    onValue(ref(db,'record'), snap => {
+      const data = snap.val();
+      recordData = data || null;
+      if(currentTab==='classement') renderRecord();
+    });
     return true;
   } catch(e) { console.error(e); return false; }
 }
@@ -880,16 +886,11 @@ function renderClassement() {
 
 
 
-/* ── RECORD DE POINTS ── */
-const LS_RECORD = 'izidutch_record';
+/* ── RECORD DE POINTS (Firebase) ── */
 let recordData = null;
 
-function loadRecord() {
-  try { recordData = JSON.parse(localStorage.getItem(LS_RECORD)||'null'); } catch(e){ recordData=null; }
-}
-function saveRecordData() {
-  try { localStorage.setItem(LS_RECORD, JSON.stringify(recordData)); } catch(e){} 
-}
+function loadRecord() { /* chargé en temps réel via onValue dans initFirebase */ }
+
 function renderRecord() {
   const card = $('record-card'); if(!card) return;
   if(!recordData || !recordData.name) {
@@ -916,20 +917,31 @@ window.openRecordModal = function() {
 window.closeRecordModal = function(e) {
   if(!e||e.target===$('modal-record')) $('modal-record').classList.add('hidden');
 };
-window.saveRecord = function() {
+window.saveRecord = async function() {
   const name = ($('record-name').value||'').trim();
   const score = parseInt($('record-score').value);
   const errEl = $('record-error');
   if(!name){ errEl.textContent='Entre un pseudo.'; errEl.style.display='block'; return; }
   if(isNaN(score)||score<0){ errEl.textContent='Entre un score valide.'; errEl.style.display='block'; return; }
   recordData = { name, score };
-  saveRecordData(); renderRecord();
+  if(!isDemo) {
+    try { await set(ref(db,'record'), recordData); }
+    catch(e) { showToast('⚠️ Erreur réseau'); }
+  } else {
+    renderRecord();
+  }
   $('modal-record').classList.add('hidden');
   showToast('🏅 Record enregistré !');
 };
-window.clearRecord = function() {
+window.clearRecord = async function() {
   if(!confirm('Effacer le record ?')) return;
-  recordData = null; saveRecordData(); renderRecord();
+  recordData = null;
+  if(!isDemo) {
+    try { await remove(ref(db,'record')); }
+    catch(e) { showToast('⚠️ Erreur réseau'); }
+  } else {
+    renderRecord();
+  }
   $('modal-record').classList.add('hidden');
   showToast('🗑️ Record effacé');
 };
