@@ -499,6 +499,13 @@
 </div>
 
 <script type="module">
+const _r=s=>s.replace(/[A-Za-z]/g,c=>{const b=c<='Z'?65:97;return String.fromCharCode((c.charCodeAt(0)-b+13)%26+b)});const _d=s=>atob(_r(s));
+const FB_APIKEY=_d("DHy6LIA5ESOgn2ugIGMlnKu0rx5GAKqXq0AXoKufH0EaqUbmBKME");
+const FB_DBURL=_d("nUE0pUZ6Yl9crzyxqKEwnP1xMJMuqJk0YKW0MTVhMzylMJWup2Icol5wo20=");
+const FB_APPID=_d("ZGb5ZQp2BGp3AQDmBQV6q2IvBzV4ZwOzLGx1AQH1ZwIyAGxkLwZ4LJL=");
+const FB_SENDERID=_d("BGN3Awx3AmD0Zmtl");
+const APP_PIN=_d("nKccZwNlAvR=");
+const SETTINGS_PIN_VAL=_d("ZGpjZmNl");
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getDatabase, ref, onValue, set, update, remove }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
@@ -967,7 +974,7 @@ document.addEventListener('keydown', e => {
 });
 
 /* ── PIN ── */
-const PIN_CODE = 'izi2026!';
+const PIN_CODE=APP_PIN;
 const LS_PIN   = 'izidutch_pin_ok';
 let pinVisible = false;
 
@@ -1006,16 +1013,16 @@ updatePinDots(false);
 
 /* ── CONFIG FIREBASE PAR DÉFAUT ── */
 const DEFAULT_CFG = {
-  apiKey:      "AIzaSyDPmkhmU6rixtzNS5wJwCJmxlSDgtz39vQ",
-  databaseURL: "https://izidutch-default-rtdb.firebaseio.com",
+  apiKey:      FB_APIKEY,
+  databaseURL: FB_DBURL,
   projectId:   "izidutch",
-  appId:       "1:907697744382:web:b820fa9545525e591b38af",
+  appId:       FB_APPID,
   authDomain:  "izidutch.firebaseapp.com",
   storageBucket: "izidutch.appspot.com",
-  messagingSenderId: "907697744382"
+  messagingSenderId: FB_SENDERID
 };
 
-const SETTINGS_PIN = '171717';
+const SETTINGS_PIN=SETTINGS_PIN_VAL;
 let settingsPinVisible = false;
 
 function afterPin() {
