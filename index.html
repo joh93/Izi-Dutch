@@ -80,11 +80,11 @@
     /* En paysage : titre à gauche, toolbar à droite */
     @media (orientation:landscape) and (max-height:500px){
       .header{padding:calc(var(--safe-top) + 6px) 16px 4px}
-      .header-inner{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
-      .header-left{text-align:left;flex-shrink:0}
+      .header-inner{flex-direction:row;align-items:center;gap:10px}
+      .header-left{text-align:center;flex:1}
       .header-left .logo{font-size:1.5rem}
       .header-left .logo-sub{display:none}
-      .header-left .status-bar{justify-content:flex-start;padding:2px 0}
+      .header-left .status-bar{justify-content:center;padding:2px 0}
       .toolbar{padding:0;flex-wrap:nowrap}
       .toolbar-btn span:not(.ico){display:none}
       .toolbar-btn{padding:6px 8px;border-radius:10px}
