@@ -74,7 +74,22 @@
     #app::before{content:'';position:absolute;top:-30%;left:-20%;width:70%;height:70%;background:radial-gradient(circle,rgba(108,99,255,.13) 0%,transparent 70%);pointer-events:none;z-index:0}
     #app::after{content:'';position:absolute;bottom:10%;right:-10%;width:50%;height:50%;background:radial-gradient(circle,rgba(199,125,255,.08) 0%,transparent 70%);pointer-events:none;z-index:0}
 
-    .header{padding:calc(var(--safe-top) + 14px) 20px 4px;text-align:center;position:relative;z-index:10;flex-shrink:0}
+    .header{padding:calc(var(--safe-top) + 14px) 20px 4px;position:relative;z-index:10;flex-shrink:0}
+    .header-inner{display:flex;flex-direction:column;align-items:center}
+    .header-left{text-align:center}
+    /* En paysage : titre à gauche, toolbar à droite */
+    @media (orientation:landscape) and (max-height:500px){
+      .header{padding:calc(var(--safe-top) + 6px) 16px 4px}
+      .header-inner{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
+      .header-left{text-align:left;flex-shrink:0}
+      .header-left .logo{font-size:1.5rem}
+      .header-left .logo-sub{display:none}
+      .header-left .status-bar{justify-content:flex-start;padding:2px 0}
+      .toolbar{padding:0;flex-wrap:nowrap}
+      .toolbar-btn span:not(.ico){display:none}
+      .toolbar-btn{padding:6px 8px;border-radius:10px}
+      .toolbar-sep{height:16px}
+    }
     .logo{font-family:'Lilita One',cursive;font-size:1.9rem;background:linear-gradient(135deg,var(--gold),var(--coral),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 2px 10px rgba(255,230,109,.25));line-height:1}
     .logo-sub{font-size:.6rem;letter-spacing:4px;text-transform:uppercase;color:var(--muted);margin-top:2px;font-weight:600}
 
@@ -298,11 +313,7 @@
     /* ── APP PAYSAGE ── */
     @media (orientation:landscape) and (max-height:500px){
       #app{max-width:100%}
-      .header{padding:calc(var(--safe-top) + 6px) 16px 2px}
-      .logo{font-size:1.4rem}
-      .logo-sub{display:none}
-      .toolbar{padding:3px 14px 2px;gap:5px}
-      .toolbar-btn{padding:4px 9px;font-size:.68rem}
+      .toolbar-btn{font-size:.68rem}
       .tabs{margin:4px 12px 0}
       .tab{padding:6px 4px;font-size:.76rem}
       .content{padding:8px 12px calc(var(--safe-bot) + 60px)}
@@ -383,24 +394,28 @@
 <!-- ── APP ── -->
 <div id="app" style="display:none">
   <div class="header">
-    <div class="logo">🃏 Izi Dutch</div>
-    <div class="logo-sub">Comptage de points</div>
-    <div class="status-bar">
-      <div class="sdot" id="sdot"></div>
-      <span id="status-text">Connexion...</span>
-    </div>
-    <div class="toolbar">
-      <button class="toolbar-btn" onclick="toggleTheme()" id="theme-btn">
-        <span class="ico">☀️</span><span id="theme-label">Mode clair</span>
-      </button>
-      <div class="toolbar-sep"></div>
-      <button class="toolbar-btn" onclick="toggleFullscreen()" id="fs-btn">
-        <span class="ico" id="fs-ico">⛶</span><span id="fs-label">Plein écran</span>
-      </button>
-      <div class="toolbar-sep"></div>
-      <button class="toolbar-btn" onclick="openSettings()">
-        <span class="ico">⚙️</span>
-      </button>
+    <div class="header-inner">
+      <div class="header-left">
+        <div class="logo">🃏 Izi Dutch</div>
+        <div class="logo-sub">Comptage de points</div>
+        <div class="status-bar">
+          <div class="sdot" id="sdot"></div>
+          <span id="status-text">Connexion...</span>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button class="toolbar-btn" onclick="toggleTheme()" id="theme-btn">
+          <span class="ico">☀️</span><span id="theme-label">Mode clair</span>
+        </button>
+        <div class="toolbar-sep"></div>
+        <button class="toolbar-btn" onclick="toggleFullscreen()" id="fs-btn">
+          <span class="ico" id="fs-ico">⛶</span><span id="fs-label">Plein écran</span>
+        </button>
+        <div class="toolbar-sep"></div>
+        <button class="toolbar-btn" onclick="openSettings()">
+          <span class="ico">⚙️</span>
+        </button>
+      </div>
     </div>
   </div>
 
