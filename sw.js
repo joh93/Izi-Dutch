@@ -1,5 +1,5 @@
 // ⚡ Incrémente CACHE_VERSION à chaque mise à jour de l'app
-const CACHE_VERSION = 5,2;
+const CACHE_VERSION = 5,3;
 const CACHE_NAME = `izidutch-v${CACHE_VERSION}`;
 
 const ASSETS = [
