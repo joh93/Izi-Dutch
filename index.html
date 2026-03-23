@@ -465,7 +465,7 @@
       <div class="group-bar">
         <div class="group-label">Groupe</div>
         <div class="group-name" id="active-group-name">Chargement...</div>
-        <button class="group-switch-btn" onclick="openGroupsModal()">⇄ Changer</button>
+        <button class="group-switch-btn" onclick="openGroupsModal(true)">⇄ Changer</button>
       </div>
 
       <!-- CLASSEMENT PARTAGE -->
@@ -627,12 +627,14 @@
     <div class="modal-title">👥 Mes groupes</div>
     <div class="group-list" id="group-list"></div>
     <!-- Ajouter un groupe -->
-    <div style="display:flex;gap:8px;margin-bottom:14px">
-      <input class="input" id="new-group-name" placeholder="Nom du nouveau groupe..." maxlength="30"
-             onkeydown="if(event.key==='Enter')addGroup()"/>
-      <button class="btn btn-primary btn-sm" style="flex-shrink:0" onclick="addGroup()">＋</button>
+    <div id="group-add-section">
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <input class="input" id="new-group-name" placeholder="Nom du nouveau groupe..." maxlength="30"
+               onkeydown="if(event.key==='Enter')addGroup()"/>
+        <button class="btn btn-primary btn-sm" style="flex-shrink:0" onclick="addGroup()">＋</button>
+      </div>
+      <div id="group-error" style="color:var(--coral);font-size:.75rem;margin-top:-8px;margin-bottom:10px;display:none"></div>
     </div>
-    <div id="group-error" style="color:var(--coral);font-size:.75rem;margin-top:-8px;margin-bottom:10px;display:none"></div>
     <button class="btn btn-ghost" style="width:100%" onclick="closeGroupsModal()">Fermer</button>
   </div>
 </div>
@@ -709,7 +711,7 @@
     <div class="modal-title">⚙️ Paramètres</div>
     <div id="settings-info" style="font-size:.8rem;color:var(--muted);margin-bottom:16px;line-height:1.5;background:rgba(255,255,255,.04);border-radius:12px;padding:12px"></div>
     <div style="display:flex;flex-direction:column;gap:10px">
-      <button class="btn btn-primary" onclick="closeSettings();openGroupsModal()">👥 Gérer les groupes</button>
+      <button class="btn btn-primary" onclick="closeSettings();openGroupsModal(false)">👥 Gérer les groupes</button>
       <button class="btn btn-warning" onclick="reconfigure()">🔥 Changer de base Firebase</button>
       <button class="btn btn-danger" onclick="confirmResetAll()">🗑️ Tout effacer (données locales)</button>
       <button class="btn btn-ghost" onclick="closeSettings()">Fermer</button>
@@ -747,7 +749,7 @@ let rankingPlayers = [];
 /* ── GROUPES ── */
 const LS_GROUPS       = 'izidutch_groups';
 const LS_ACTIVE_GROUP = 'izidutch_active_group';
-const DEFAULT_GROUP   = 'Général';
+const DEFAULT_GROUP   = 'Izi confort';
 let groups = [];           // liste des noms de groupes
 let activeGroup = DEFAULT_GROUP;
 let fbListeners = [];      // pour détacher les anciens listeners Firebase
@@ -864,13 +866,34 @@ function switchGroup(name) {
   showToast(`👥 Groupe : ${name}`);
 }
 
-window.openGroupsModal = function() {
+let _groupsFromSwitch = false; // true = ouvert depuis le bouton Changer (switch only)
+
+window.openGroupsModal = function(switchOnly) {
+  _groupsFromSwitch = !!switchOnly;
+  // Le bouton "Changer" demande le PIN
+  if(_groupsFromSwitch) {
+    _pendingAction = 'groups';
+    $('settings-pin-input').value='';
+    $('settings-pin-error').textContent='';
+    settingsPinVisible=false;
+    $('settings-pin-input').type='password';
+    $('modal-settings-pin').classList.remove('hidden');
+    setTimeout(()=>$('settings-pin-input').focus(), 350);
+    return;
+  }
+  _showGroupsModal();
+};
+
+function _showGroupsModal() {
   renderGroupList();
+  // Si ouvert depuis "Changer", cache le formulaire d'ajout/suppression
+  const addSection = $('group-add-section');
+  if(addSection) addSection.style.display = _groupsFromSwitch ? 'none' : 'block';
   $('new-group-name').value = '';
   $('group-error').style.display = 'none';
   $('modal-groups').classList.remove('hidden');
-  setTimeout(() => $('new-group-name').focus(), 300);
-};
+  if(!_groupsFromSwitch) setTimeout(() => $('new-group-name').focus(), 300);
+}
 window.closeGroupsModal = function(e) {
   if(!e || e.target === $('modal-groups')) $('modal-groups').classList.add('hidden');
 };
@@ -880,7 +903,7 @@ function renderGroupList() {
     <div class="group-item${g===activeGroup?' active':''}" onclick="selectGroup('${esc(g)}')">
       <div style="font-size:1.1rem">${g===activeGroup?'✅':'⭕'}</div>
       <div class="group-item-name">${esc(g)}</div>
-      ${groups.length > 1 ? `<button class="group-delete-btn" onclick="deleteGroup(event,'${esc(g)}')">🗑️</button>` : ''}
+      ${(!_groupsFromSwitch && groups.length > 1) ? `<button class="group-delete-btn" onclick="deleteGroup(event,'${esc(g)}')">🗑️</button>` : ''}
     </div>
   `).join('');
 }
@@ -1331,19 +1354,26 @@ window.openSettings = function() {
   $('settings-pin-input').type='password';
   setTimeout(()=>$('settings-pin-input').focus(), 350);
 };
+let _pendingAction = 'settings'; // 'settings' | 'groups'
+
 window.checkSettingsPin = function() {
   const val = ($('settings-pin-input').value||'').trim();
   if(val === SETTINGS_PIN) {
     $('modal-settings-pin').classList.add('hidden');
-    // Affiche les vraies infos
-    try {
-      const saved=localStorage.getItem(LS_CFG);
-      const cfg = saved ? JSON.parse(saved) : DEFAULT_CFG;
-      $('settings-info').innerHTML = cfg._isDemo
-        ? '<strong>Mode :</strong> Démo locale (pas de partage en ligne)'
-        : `<strong>Mode :</strong> Firebase connecté<br><strong>Projet :</strong> ${cfg.projectId||DEFAULT_CFG.projectId}<br><strong>DB URL :</strong> ${(cfg.databaseURL||DEFAULT_CFG.databaseURL).replace('https://','').slice(0,45)}`;
-    } catch(e){}
-    $('modal-settings').classList.remove('hidden');
+    if(_pendingAction === 'groups') {
+      _showGroupsModal();
+    } else {
+      // Affiche les vraies infos settings
+      try {
+        const saved=localStorage.getItem(LS_CFG);
+        const cfg = saved ? JSON.parse(saved) : DEFAULT_CFG;
+        $('settings-info').innerHTML = cfg._isDemo
+          ? '<strong>Mode :</strong> Démo locale (pas de partage en ligne)'
+          : `<strong>Mode :</strong> Firebase connecté<br><strong>Projet :</strong> ${cfg.projectId||DEFAULT_CFG.projectId}<br><strong>DB URL :</strong> ${(cfg.databaseURL||DEFAULT_CFG.databaseURL).replace('https://','').slice(0,45)}`;
+      } catch(e){}
+      $('modal-settings').classList.remove('hidden');
+    }
+    _pendingAction = 'settings'; // reset
   } else {
     $('settings-pin-error').textContent='❌ Code incorrect';
     $('settings-pin-input').classList.add('err');
