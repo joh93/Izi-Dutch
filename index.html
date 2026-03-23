@@ -747,7 +747,6 @@ let localState = { players: [], history: [] };
 let rankingPlayers = [];
 
 /* ── GROUPES ── */
-const LS_GROUPS       = 'izidutch_groups';
 const LS_ACTIVE_GROUP = 'izidutch_active_group';
 const DEFAULT_GROUP   = 'Izi confort';
 let groups = [];           // liste des noms de groupes
@@ -802,12 +801,21 @@ function subscribeToGroup() {
   updateGroupBar();
 }
 
+function subscribeToGroupsOnce() {
+  // Appelé une seule fois au démarrage (pas redétaché lors du switchGroup)
+  if(!db || _groupsSubscribed) return;
+  _groupsSubscribed = true;
+  subscribeToGroups();
+}
+let _groupsSubscribed = false;
+
 function initFirebase(cfg) {
   try {
     const app = initializeApp(cfg);
     db = getDatabase(app);
     setStatus('syncing');
-    subscribeToGroup();
+    subscribeToGroupsOnce(); // écoute la liste des groupes (une fois)
+    subscribeToGroup();       // écoute le classement+record du groupe actif
     return true;
   } catch(e) { console.error(e); return false; }
 }
@@ -831,22 +839,47 @@ async function fbRemove(id) {
 
 /* ── GESTION DES GROUPES ── */
 function loadGroups() {
-  try {
-    const saved = localStorage.getItem(LS_GROUPS);
-    groups = saved ? JSON.parse(saved) : [DEFAULT_GROUP];
-    if(!groups.length) groups = [DEFAULT_GROUP];
-  } catch(e) { groups = [DEFAULT_GROUP]; }
+  // La liste vient de Firebase (via subscribeToGroups).
+  // On charge juste le groupe actif depuis localStorage (choix local).
   try {
     const saved = localStorage.getItem(LS_ACTIVE_GROUP);
-    activeGroup = (saved && groups.includes(saved)) ? saved : groups[0];
-  } catch(e) { activeGroup = groups[0]; }
+    activeGroup = saved || DEFAULT_GROUP;
+  } catch(e) { activeGroup = DEFAULT_GROUP; }
 }
 
-function saveGroups() {
-  try {
-    localStorage.setItem(LS_GROUPS, JSON.stringify(groups));
-    localStorage.setItem(LS_ACTIVE_GROUP, activeGroup);
-  } catch(e) {}
+function saveActiveGroup() {
+  // Seul le groupe actif est local (chaque appareil a son propre choix)
+  try { localStorage.setItem(LS_ACTIVE_GROUP, activeGroup); } catch(e) {}
+}
+
+async function saveGroupsToFb() {
+  if(isDemo) {
+    try { localStorage.setItem('izidutch_demo_groups', JSON.stringify(groups)); } catch(e) {}
+    return;
+  }
+  try { await set(ref(db, 'meta/groupes'), groups); }
+  catch(e) { showToast('⚠️ Erreur réseau'); }
+}
+
+function subscribeToGroups() {
+  if(!db) return;
+  onValue(ref(db, 'meta/groupes'), snap => {
+    const data = snap.val();
+    if(data && Array.isArray(data) && data.length) {
+      groups = data;
+    } else {
+      // Première utilisation : initialise avec le groupe par défaut
+      groups = [DEFAULT_GROUP];
+      saveGroupsToFb();
+    }
+    // S'assure que le groupe actif existe toujours
+    if(!groups.includes(activeGroup)) {
+      activeGroup = groups[0];
+      saveActiveGroup();
+    }
+    renderGroupList();
+    updateGroupBar();
+  });
 }
 
 function updateGroupBar() {
@@ -859,7 +892,7 @@ function switchGroup(name) {
   activeGroup = name;
   rankingPlayers = [];
   recordData = null;
-  saveGroups();
+  saveActiveGroup();
   renderClassement();
   renderRecord();
   subscribeToGroup();
@@ -913,7 +946,7 @@ window.selectGroup = function(name) {
   renderGroupList();
 };
 
-window.addGroup = function() {
+window.addGroup = async function() {
   const name = ($('new-group-name').value || '').trim();
   const errEl = $('group-error');
   if(!name) { errEl.textContent = 'Entre un nom de groupe.'; errEl.style.display='block'; return; }
@@ -921,7 +954,7 @@ window.addGroup = function() {
     errEl.textContent = 'Ce groupe existe déjà.'; errEl.style.display='block'; return;
   }
   groups.push(name);
-  saveGroups();
+  await saveGroupsToFb(); // sync Firebase → tous les appareils voient le nouveau groupe
   switchGroup(name);
   $('new-group-name').value = '';
   errEl.style.display = 'none';
@@ -929,13 +962,13 @@ window.addGroup = function() {
   showToast(`✅ Groupe "${name}" créé !`);
 };
 
-window.deleteGroup = function(e, name) {
+window.deleteGroup = async function(e, name) {
   e.stopPropagation();
-  if(!confirm(`Supprimer le groupe "${name}" ? (Les données Firebase ne seront pas effacées)`)) return;
+  if(!confirm(`Supprimer le groupe "${name}" ? (Le classement Firebase du groupe est conservé)`)) return;
   groups = groups.filter(g => g !== name);
   if(!groups.length) groups = [DEFAULT_GROUP];
   if(activeGroup === name) switchGroup(groups[0]);
-  saveGroups();
+  await saveGroupsToFb(); // sync Firebase → tous les appareils voient la suppression
   renderGroupList();
   showToast(`🗑️ Groupe "${name}" supprimé`);
 };
@@ -959,6 +992,7 @@ window.useDemo = function() {
   isDemo = true;
   localStorage.setItem(LS_CFG, JSON.stringify({_isDemo:true}));
   try { rankingPlayers = JSON.parse(localStorage.getItem(LS_DEMO)||'[]'); } catch(e){ rankingPlayers=[]; }
+  try { groups = JSON.parse(localStorage.getItem('izidutch_demo_groups')||'null') || [DEFAULT_GROUP]; } catch(e){ groups=[DEFAULT_GROUP]; }
   startApp(); setStatus('offline');
 };
 
