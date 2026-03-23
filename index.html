@@ -318,6 +318,15 @@
     .stat-inc-btn:active{transform:scale(.88)}
     .stat-inc-btn.plus{background:rgba(78,205,196,.2);color:var(--teal);border:1px solid rgba(78,205,196,.4)}
     .stat-inc-btn.minus{background:rgba(255,107,107,.15);color:var(--coral);border:1px solid rgba(255,107,107,.3)}
+
+    /* LOCKOUT PIN */
+    .pin-lockout{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px;background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.25);border-radius:14px;width:100%}
+    .pin-lockout-icon{font-size:1.8rem}
+    .pin-lockout-msg{font-size:.8rem;font-weight:700;color:var(--coral);text-align:center;line-height:1.4}
+    .pin-lockout-timer{font-family:'Lilita One',cursive;font-size:1.6rem;color:var(--coral)}
+    .pin-attempts{display:flex;gap:6px;justify-content:center}
+    .pin-attempt-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,107,107,.25);transition:background .3s}
+    .pin-attempt-dot.used{background:var(--coral)}
     /* SCORE MODAL */
     .quick-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:12px}
     .quick-btn{padding:16px 8px;border-radius:16px;border:none;font-family:'Lilita One',cursive;font-size:1.15rem;cursor:pointer;touch-action:manipulation;transition:all .14s ease;-webkit-user-select:none}
@@ -371,13 +380,27 @@
   <div class="pin-sub">Entrez le code d'accès</div>
   <div class="pin-card">
     <div class="pin-label">🔒 Code requis pour accéder à l'app</div>
-    <div class="pin-dots" id="pin-dots"></div>
-    <div class="pin-input-wrap">
-      <input class="pin-input" id="pin-input" type="password" placeholder="••••••••" maxlength="20" autocomplete="off" onkeydown="if(event.key==='Enter')checkPin()"/>
-      <button class="pin-toggle" id="pin-toggle" onclick="togglePinVis()" type="button">👁️</button>
+    <div class="pin-attempts" id="pin-attempts">
+      <div class="pin-attempt-dot" id="pa0"></div>
+      <div class="pin-attempt-dot" id="pa1"></div>
+      <div class="pin-attempt-dot" id="pa2"></div>
     </div>
-    <div class="pin-error" id="pin-error"></div>
-    <button class="btn btn-primary" style="width:100%" onclick="checkPin()">Accéder →</button>
+    <div class="pin-dots" id="pin-dots"></div>
+    <div id="pin-lockout-zone" style="display:none;width:100%">
+      <div class="pin-lockout">
+        <div class="pin-lockout-icon">🔒</div>
+        <div class="pin-lockout-msg">Trop de tentatives incorrectes.<br>Réessaie dans</div>
+        <div class="pin-lockout-timer" id="pin-lockout-timer">60</div>
+      </div>
+    </div>
+    <div id="pin-input-zone" style="width:100%">
+      <div class="pin-input-wrap">
+        <input class="pin-input" id="pin-input" type="password" placeholder="••••••••" maxlength="20" autocomplete="off" onkeydown="if(event.key==='Enter')checkPin()"/>
+        <button class="pin-toggle" id="pin-toggle" onclick="togglePinVis()" type="button">👁️</button>
+      </div>
+      <div class="pin-error" id="pin-error"></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:2px" id="pin-submit-btn" onclick="checkPin()">Accéder →</button>
+    </div>
     <div class="pin-footer">Izi Dutch · Accès privé</div>
   </div>
 </div>
@@ -1654,18 +1677,96 @@ const PIN_CODE=APP_PIN;
 const LS_PIN   = 'izidutch_pin_ok';
 let pinVisible = false;
 
+/* ── LOCKOUT ── */
+const LS_LOCKOUT    = 'izidutch_lockout';
+const MAX_ATTEMPTS  = 3;
+const LOCKOUT_SECS  = 60;
+let pinAttempts     = 0;
+let lockoutInterval = null;
+
+function updateAttemptDots() {
+  for(let i=0;i<MAX_ATTEMPTS;i++){
+    const d = $(`pa${i}`);
+    if(d) d.classList.toggle('used', i < pinAttempts);
+  }
+}
+
+function startLockout() {
+  // Sauvegarde l'heure de blocage
+  localStorage.setItem(LS_LOCKOUT, Date.now().toString());
+  applyLockout();
+}
+
+function applyLockout() {
+  const lockTime = parseInt(localStorage.getItem(LS_LOCKOUT)||'0');
+  const elapsed  = Math.floor((Date.now() - lockTime) / 1000);
+  let remaining  = LOCKOUT_SECS - elapsed;
+  if(remaining <= 0) { clearLockout(); return; }
+
+  // Affiche l'écran de blocage
+  $('pin-input-zone').style.display  = 'none';
+  $('pin-lockout-zone').style.display = 'block';
+  $('pin-lockout-timer').textContent  = remaining + 's';
+
+  if(lockoutInterval) clearInterval(lockoutInterval);
+  lockoutInterval = setInterval(() => {
+    remaining--;
+    if(remaining <= 0) {
+      clearInterval(lockoutInterval);
+      clearLockout();
+    } else {
+      $('pin-lockout-timer').textContent = remaining + 's';
+    }
+  }, 1000);
+}
+
+function clearLockout() {
+  localStorage.removeItem(LS_LOCKOUT);
+  pinAttempts = 0;
+  updateAttemptDots();
+  $('pin-lockout-zone').style.display = 'none';
+  $('pin-input-zone').style.display   = 'block';
+  $('pin-input').value = '';
+  $('pin-error').textContent = '';
+  updatePinDots(false);
+  $('pin-input').focus();
+}
+
+// Vérifie au chargement si un lockout est en cours
+(function checkExistingLockout() {
+  const lockTime = parseInt(localStorage.getItem(LS_LOCKOUT)||'0');
+  if(lockTime && (Date.now() - lockTime) < LOCKOUT_SECS * 1000) {
+    applyLockout();
+  }
+})();
+
 window.checkPin = function() {
-  const val = $('pin-input').value;
+  // Vérifie si lockout actif
+  const lockTime = parseInt(localStorage.getItem(LS_LOCKOUT)||'0');
+  if(lockTime && (Date.now() - lockTime) < LOCKOUT_SECS * 1000) return;
+
+  const val = ($('pin-input').value||'');
   if(val === PIN_CODE) {
+    pinAttempts = 0;
+    updateAttemptDots();
     localStorage.setItem(LS_PIN, '1');
     $('pin-screen').classList.add('hidden');
     afterPin();
   } else {
+    pinAttempts++;
+    updateAttemptDots();
     const inp = $('pin-input');
     const err = $('pin-error');
     inp.classList.add('err');
-    err.textContent = '❌ Code incorrect, réessaie.';
     updatePinDots(true);
+
+    const remaining = MAX_ATTEMPTS - pinAttempts;
+    if(pinAttempts >= MAX_ATTEMPTS) {
+      err.textContent = '';
+      setTimeout(() => startLockout(), 600);
+    } else {
+      err.textContent = `❌ Code incorrect — ${remaining} tentative${remaining>1?'s':''} restante${remaining>1?'s':''}`;
+    }
     setTimeout(() => { inp.classList.remove('err'); inp.value=''; updatePinDots(false); }, 900);
   }
 };
