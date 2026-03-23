@@ -25,45 +25,61 @@
       --app-grad:linear-gradient(160deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);
       --safe-top:env(safe-area-inset-top,0px);--safe-bot:env(safe-area-inset-bottom,0px);
     }
-    /* ── MODE CLAIR ── */
+    /* ── MODE CLAIR ── tons ardoise, contrastes forts */
     body.light {
-      --bg:#f0f2f8;--bg1:#ffffff;--bg2:#eef0f8;--bg3:#dde1f0;
-      --text:#1a1a2e;--muted:rgba(26,26,46,0.45);
-      --card-bg:rgba(0,0,0,0.03);--card-bdr:rgba(0,0,0,0.09);
-      --app-grad:linear-gradient(160deg,#ffffff 0%,#eef0f8 50%,#dde1f0 100%);
+      --bg:#e8eaf2;--bg1:#f2f3f9;--bg2:#e4e6f0;--bg3:#d4d8ec;
+      --text:#1e1e30;--muted:rgba(30,30,48,0.55);
+      --card-bg:rgba(30,30,60,0.06);--card-bdr:rgba(30,30,60,0.14);
+      --app-grad:linear-gradient(160deg,#f2f3f9 0%,#e4e6f0 50%,#d4d8ec 100%);
     }
-    body.light .tab{color:rgba(26,26,46,.4)}
+    body.light .tab{color:rgba(30,30,48,.5)}
     body.light .tab.active{color:#fff}
-    body.light .logo-sub{color:rgba(26,26,46,.4)}
-    body.light .status-bar{color:rgba(26,26,46,.5)}
-    body.light .toolbar-btn{color:rgba(26,26,46,.55);border-color:rgba(26,26,46,.12);background:rgba(0,0,0,.04)}
-    body.light .toolbar-btn:hover{background:rgba(0,0,0,.08)}
-    body.light .vignette{box-shadow:0 2px 12px rgba(0,0,0,.08)}
-    body.light .modal{background:linear-gradient(160deg,#fff,#eef0f8);border-color:rgba(0,0,0,.08)}
-    body.light .input{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.12);color:#1a1a2e}
-    body.light .input::placeholder{color:rgba(26,26,46,.3)}
-    body.light .btn-ghost{background:rgba(0,0,0,.05);color:rgba(26,26,46,.6);border-color:rgba(0,0,0,.1)}
-    body.light .ranking-row{background:rgba(0,0,0,.03);border-color:rgba(0,0,0,.07)}
-    body.light .stat-pill{background:rgba(0,0,0,.06)}
-    body.light .step-bar{background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.06)}
-    body.light .step-chip{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.1);color:rgba(26,26,46,.5)}
-    body.light .step-chip.active{background:rgba(108,99,255,.15);border-color:var(--accent);color:var(--accent)}
-    body.light .step-custom{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.1);color:#1a1a2e}
-    body.light .empty{color:rgba(26,26,46,.2)}
-    body.light .record-card{background:linear-gradient(135deg,rgba(255,230,109,.12),rgba(255,107,107,.08));border-color:rgba(255,200,50,.3)}
-    body.light .hist-item{border-color:rgba(0,0,0,.06)}
-    body.light .stat-row{background:rgba(0,0,0,.03);border-color:rgba(0,0,0,.06)}
-    body.light .pin-card{background:rgba(0,0,0,.03);border-color:rgba(0,0,0,.07)}
-    body.light .pin-input{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.12);color:#1a1a2e}
-    body.light .setup-card{background:rgba(0,0,0,.03);border-color:rgba(0,0,0,.07)}
-    body.light #app::before,body.light #app::after{opacity:.3}
-    body.light .quick-btn.pos{background:rgba(78,205,196,.12);border-color:rgba(78,205,196,.3)}
-    body.light .quick-btn.neg{background:rgba(255,107,107,.1);border-color:rgba(255,107,107,.25)}
-    body.light .custom-val-input{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.12);color:#1a1a2e}
-    body.light .win-bar{background:rgba(0,0,0,.08)}
-    body.light .tabs{background:rgba(0,0,0,.06)}
-    body.light .score-modal-score{color:#1a1a2e}
-    body.light .player-score{color:#1a1a2e !important}
+    body.light .logo-sub{color:rgba(30,30,48,.45)}
+    body.light .status-bar{color:rgba(30,30,48,.55)}
+    body.light .toolbar-btn{color:rgba(30,30,48,.7);border-color:rgba(30,30,60,.2);background:rgba(30,30,60,.07)}
+    body.light .toolbar-btn:hover{background:rgba(30,30,60,.13)}
+    body.light .vignette{box-shadow:0 2px 14px rgba(0,0,0,.12)}
+    body.light .modal{background:linear-gradient(160deg,#f2f3f9,#e4e6f0);border-color:rgba(30,30,60,.14)}
+    body.light .input{background:rgba(30,30,60,.07);border-color:rgba(30,30,60,.18);color:#1e1e30}
+    body.light .input::placeholder{color:rgba(30,30,48,.35)}
+    body.light .btn-ghost{background:rgba(30,30,60,.08);color:rgba(30,30,48,.75);border-color:rgba(30,30,60,.18)}
+    body.light .ranking-row{background:rgba(30,30,60,.05);border-color:rgba(30,30,60,.12)}
+    body.light .stat-pill{background:rgba(30,30,60,.09)}
+    body.light .stat-val{color:#1e1e30}
+    body.light .step-bar{background:rgba(30,30,60,.05);border-color:rgba(30,30,60,.1)}
+    body.light .step-chip{background:rgba(30,30,60,.07);border-color:rgba(30,30,60,.15);color:rgba(30,30,48,.6)}
+    body.light .step-chip.active{background:rgba(108,99,255,.18);border-color:var(--accent);color:var(--accent)}
+    body.light .step-custom{background:rgba(30,30,60,.07);border-color:rgba(30,30,60,.15);color:#1e1e30}
+    body.light .empty{color:rgba(30,30,48,.3)}
+    body.light .record-card{background:linear-gradient(135deg,rgba(255,220,80,.18),rgba(255,107,107,.1));border-color:rgba(220,170,30,.4)}
+    body.light .record-score{color:#b8860b}
+    body.light .record-holder{color:#b8860b !important}
+    body.light .hist-item{border-color:rgba(30,30,60,.09)}
+    body.light .stat-row{background:rgba(30,30,60,.05);border-color:rgba(30,30,60,.1)}
+    body.light .pin-card{background:rgba(30,30,60,.05);border-color:rgba(30,30,60,.12)}
+    body.light .pin-input{background:rgba(30,30,60,.07);border-color:rgba(30,30,60,.18);color:#1e1e30}
+    body.light .setup-card{background:rgba(30,30,60,.05);border-color:rgba(30,30,60,.12)}
+    body.light #app::before,body.light #app::after{opacity:.5}
+    body.light .quick-btn.pos{background:rgba(78,205,196,.18);border-color:rgba(78,205,196,.45);color:#1a7a73}
+    body.light .quick-btn.neg{background:rgba(255,107,107,.15);border-color:rgba(255,107,107,.35);color:#cc3333}
+    body.light .custom-val-input{background:rgba(30,30,60,.07);border-color:rgba(30,30,60,.18);color:#1e1e30}
+    body.light .win-bar{background:rgba(30,30,60,.12)}
+    body.light .tabs{background:rgba(30,30,60,.08)}
+    body.light .score-modal-score{color:#1e1e30}
+    body.light .player-score{color:#1e1e30 !important}
+    body.light .player-name{color:inherit}
+    body.light .rank-badge{color:rgba(30,30,48,.35)}
+    body.light .leader .rank-badge{color:#b8860b}
+    body.light .leader-badge{background:rgba(184,134,11,.15);color:#b8860b}
+    body.light .modal-title{color:#1e1e30}
+    body.light .form-label{color:rgba(30,30,48,.6)}
+    body.light .section-label{color:rgba(30,30,48,.55)}
+    body.light .group-bar{background:rgba(108,99,255,.1);border-color:rgba(108,99,255,.25)}
+    body.light .group-name{color:#1e1e30}
+    body.light .group-switch-btn{background:rgba(108,99,255,.15);border-color:rgba(108,99,255,.3);color:var(--accent)}
+    body.light .stat-row-label{color:rgba(30,30,48,.65) !important}
+    body.light .hist-name{color:#1e1e30}
+    body.light .hist-meta{color:rgba(30,30,48,.5)}
     /* transitions douces */
     body,#app,.modal,.vignette,.ranking-row,.stat-pill,.input,.btn{transition:background .3s ease,color .2s ease,border-color .2s ease}
 
@@ -450,6 +466,13 @@
     </div>
 
     <div class="page" id="page-classement">
+      <!-- GROUPE ACTIF -->
+      <div class="group-bar">
+        <div class="group-label">Groupe</div>
+        <div class="group-name" id="active-group-name">Chargement...</div>
+        <button class="group-switch-btn" onclick="openGroupsModal(true)">⇄ Changer</button>
+      </div>
+
       <!-- RECORD -->
       <div class="record-section">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
@@ -459,13 +482,6 @@
         <div class="record-card" id="record-card">
           <div class="record-empty">Aucun record enregistré — appuie sur Modifier</div>
         </div>
-      </div>
-
-      <!-- GROUPE ACTIF -->
-      <div class="group-bar">
-        <div class="group-label">Groupe</div>
-        <div class="group-name" id="active-group-name">Chargement...</div>
-        <button class="group-switch-btn" onclick="openGroupsModal(true)">⇄ Changer</button>
       </div>
 
       <!-- CLASSEMENT PARTAGE -->
@@ -536,11 +552,14 @@
     <div class="modal-handle"></div>
     <div class="rank-edit-header">
       <div id="re-avatar" class="avatar" style="width:44px;height:44px;font-size:1.2rem"></div>
-      <div>
-        <div id="re-name" style="font-weight:900;font-size:1rem"></div>
+      <div style="flex:1;min-width:0">
+        <div id="re-name" style="font-weight:900;font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
         <div style="font-size:.7rem;color:var(--muted)">Modifier les statistiques</div>
       </div>
-      <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="openColorEditFromRank()">🎨</button>
+      <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
+        <button class="btn btn-ghost btn-sm" onclick="openColorEditFromRank()">🎨</button>
+        <button class="btn btn-ghost btn-sm" onclick="openRenameRankModal()">✏️</button>
+      </div>
     </div>
     <div class="stat-editor">
       <div class="stat-row">
@@ -636,6 +655,21 @@
       <div id="group-error" style="color:var(--coral);font-size:.75rem;margin-top:-8px;margin-bottom:10px;display:none"></div>
     </div>
     <button class="btn btn-ghost" style="width:100%" onclick="closeGroupsModal()">Fermer</button>
+  </div>
+</div>
+
+<!-- Modal: renommer joueur classement -->
+<div class="overlay hidden" id="modal-rename-rank" onclick="closeRenameRankModal(event)" style="z-index:210">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">✏️ Changer le pseudo</div>
+    <input class="input" id="rename-rank-input" placeholder="Nouveau pseudo..." maxlength="20"
+           onkeydown="if(event.key==='Enter')saveRenameRank()"/>
+    <div id="rename-rank-error" style="color:var(--coral);font-size:.75rem;margin-top:8px;display:none"></div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeRenameRankModal()">Annuler</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveRenameRank()">Valider</button>
+    </div>
   </div>
 </div>
 
@@ -1316,6 +1350,35 @@ window.saveRankEdit = async function() {
   $('modal-rank-edit').classList.add('hidden');
   showToast('✅ Statistiques mises à jour !');
 };
+
+/* ── RENOMMAGE CLASSEMENT ── */
+window.openRenameRankModal = function() {
+  const pl = rankingPlayers.find(p=>p.id===rePlayerId); if(!pl) return;
+  $('rename-rank-input').value = pl.name;
+  $('rename-rank-error').style.display='none';
+  $('modal-rename-rank').classList.remove('hidden');
+  setTimeout(()=>{ $('rename-rank-input').focus(); $('rename-rank-input').select(); }, 300);
+};
+window.closeRenameRankModal = function(e) {
+  if(!e||e.target===$('modal-rename-rank')) $('modal-rename-rank').classList.add('hidden');
+};
+window.saveRenameRank = async function() {
+  const newName = ($('rename-rank-input').value||'').trim();
+  const errEl = $('rename-rank-error');
+  if(!newName){ errEl.textContent='Entre un pseudo.'; errEl.style.display='block'; return; }
+  if(rankingPlayers.some(p=>p.id!==rePlayerId && p.name.toLowerCase()===newName.toLowerCase())){
+    errEl.textContent='Ce pseudo est déjà utilisé.'; errEl.style.display='block'; return;
+  }
+  const pl = rankingPlayers.find(p=>p.id===rePlayerId); if(!pl) return;
+  pl.name = newName;
+  if(isDemo){ saveDemoRanking(); }
+  else await fbUpdate(rePlayerId, { name: newName });
+  // Mettre à jour l'affichage de la modale rank-edit
+  $('re-name').textContent = newName;
+  $('re-avatar').textContent = newName[0].toUpperCase();
+  $('modal-rename-rank').classList.add('hidden');
+  showToast('✏️ Pseudo mis à jour !');
+};
 window.removeClassementPlayerFromModal = async function() {
   if(!rePlayerId) return;
   const pl = rankingPlayers.find(p=>p.id===rePlayerId); if(!pl) return;
@@ -1519,7 +1582,7 @@ window.applyUpdate = function() {
 };
 
 document.addEventListener('keydown', e => {
-  if(e.key==='Escape') ['modal-add','modal-history','modal-settings','modal-score','modal-color-edit','modal-rank-edit','modal-settings-pin','modal-rename','modal-record','modal-groups'].forEach(id=>$(id).classList.add('hidden'));
+  if(e.key==='Escape') ['modal-add','modal-history','modal-settings','modal-score','modal-color-edit','modal-rank-edit','modal-settings-pin','modal-rename','modal-record','modal-groups','modal-rename-rank'].forEach(id=>$(id).classList.add('hidden'));
 });
 
 
