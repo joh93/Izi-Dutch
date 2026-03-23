@@ -268,6 +268,22 @@
 
 
 
+
+    /* GROUPES */
+    .group-bar{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:10px 13px;background:rgba(108,99,255,.08);border:1px solid rgba(108,99,255,.2);border-radius:16px}
+    .group-label{font-size:.7rem;font-weight:800;color:var(--accent2);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0}
+    .group-name{font-family:'Lilita One',cursive;font-size:1rem;color:#fff;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .group-switch-btn{background:rgba(108,99,255,.2);border:1px solid rgba(108,99,255,.35);color:#b8b2ff;border-radius:9px;padding:5px 10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:.72rem;cursor:pointer;touch-action:manipulation;white-space:nowrap;flex-shrink:0}
+    .group-switch-btn:active{transform:scale(.93)}
+    /* Modal groupes */
+    .group-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;max-height:40vh;overflow-y:auto}
+    .group-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:14px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);cursor:pointer;touch-action:manipulation;transition:all .15s}
+    .group-item:active{transform:scale(.97)}
+    .group-item.active{border-color:var(--accent);background:rgba(108,99,255,.12)}
+    .group-item-name{font-weight:800;font-size:.9rem;flex:1}
+    .group-item-check{font-size:1rem;flex-shrink:0}
+    .group-delete-btn{background:none;border:none;cursor:pointer;font-size:.9rem;opacity:.4;padding:4px;touch-action:manipulation}
+    .group-delete-btn:active{opacity:1}
     /* RECORD */
     .record-section{margin-bottom:18px}
     .record-card{background:linear-gradient(135deg,rgba(255,230,109,.08),rgba(255,107,107,.06));border:1px solid rgba(255,230,109,.2);border-radius:20px;padding:14px 16px}
@@ -445,6 +461,13 @@
         </div>
       </div>
 
+      <!-- GROUPE ACTIF -->
+      <div class="group-bar">
+        <div class="group-label">Groupe</div>
+        <div class="group-name" id="active-group-name">Chargement...</div>
+        <button class="group-switch-btn" onclick="openGroupsModal()">⇄ Changer</button>
+      </div>
+
       <!-- CLASSEMENT PARTAGE -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div class="section-label" style="margin:0">🏆 Classement partagé</div>
@@ -597,6 +620,23 @@
   </div>
 </div>
 
+<!-- Modal: groupes -->
+<div class="overlay hidden" id="modal-groups" onclick="closeGroupsModal(event)" style="z-index:205">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">👥 Mes groupes</div>
+    <div class="group-list" id="group-list"></div>
+    <!-- Ajouter un groupe -->
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <input class="input" id="new-group-name" placeholder="Nom du nouveau groupe..." maxlength="30"
+             onkeydown="if(event.key==='Enter')addGroup()"/>
+      <button class="btn btn-primary btn-sm" style="flex-shrink:0" onclick="addGroup()">＋</button>
+    </div>
+    <div id="group-error" style="color:var(--coral);font-size:.75rem;margin-top:-8px;margin-bottom:10px;display:none"></div>
+    <button class="btn btn-ghost" style="width:100%" onclick="closeGroupsModal()">Fermer</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <div id="update-banner" class="hidden">
@@ -669,6 +709,7 @@
     <div class="modal-title">⚙️ Paramètres</div>
     <div id="settings-info" style="font-size:.8rem;color:var(--muted);margin-bottom:16px;line-height:1.5;background:rgba(255,255,255,.04);border-radius:12px;padding:12px"></div>
     <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn btn-primary" onclick="closeSettings();openGroupsModal()">👥 Gérer les groupes</button>
       <button class="btn btn-warning" onclick="reconfigure()">🔥 Changer de base Firebase</button>
       <button class="btn btn-danger" onclick="confirmResetAll()">🗑️ Tout effacer (données locales)</button>
       <button class="btn btn-ghost" onclick="closeSettings()">Fermer</button>
@@ -703,6 +744,14 @@ let installPrompt = null;
 let localState = { players: [], history: [] };
 let rankingPlayers = [];
 
+/* ── GROUPES ── */
+const LS_GROUPS       = 'izidutch_groups';
+const LS_ACTIVE_GROUP = 'izidutch_active_group';
+const DEFAULT_GROUP   = 'Général';
+let groups = [];           // liste des noms de groupes
+let activeGroup = DEFAULT_GROUP;
+let fbListeners = [];      // pour détacher les anciens listeners Firebase
+
 const $ = id => document.getElementById(id);
 const genId = () => Date.now().toString(36) + Math.random().toString(36).substr(2,5);
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -723,42 +772,150 @@ function setStatus(s) {
   else { if(txt) txt.textContent=isDemo?'🎮 Mode démo':'⚠️ Hors ligne'; if(sl) sl.textContent=isDemo?'local':'hors ligne'; }
 }
 
+function groupPath(sub) {
+  // Sanitise le nom du groupe pour un chemin Firebase valide
+  const safe = activeGroup.replace(/[.#$\[\]]/g,'_');
+  return `groupes/${safe}/${sub}`;
+}
+
+function subscribeToGroup() {
+  // Détache les anciens listeners
+  fbListeners.forEach(unsub => { try { unsub(); } catch(e){} });
+  fbListeners = [];
+  if(!db) return;
+
+  const unsubClass = onValue(ref(db, groupPath('classement')), snap => {
+    const data = snap.val();
+    rankingPlayers = data ? Object.entries(data).map(([id,v]) => ({id,...v})) : [];
+    if(currentTab==='classement') renderClassement();
+    setStatus('online');
+  }, () => setStatus('offline'));
+
+  const unsubRecord = onValue(ref(db, groupPath('record')), snap => {
+    recordData = snap.val() || null;
+    if(currentTab==='classement') renderRecord();
+  });
+
+  fbListeners.push(unsubClass, unsubRecord);
+  updateGroupBar();
+}
+
 function initFirebase(cfg) {
   try {
     const app = initializeApp(cfg);
     db = getDatabase(app);
     setStatus('syncing');
-    onValue(ref(db,'classement'), snap => {
-      const data = snap.val();
-      rankingPlayers = data ? Object.entries(data).map(([id,v]) => ({id,...v})) : [];
-      if(currentTab==='classement') renderClassement();
-      setStatus('online');
-    }, () => setStatus('offline'));
-    // Écoute du record en temps réel
-    onValue(ref(db,'record'), snap => {
-      const data = snap.val();
-      recordData = data || null;
-      if(currentTab==='classement') renderRecord();
-    });
+    subscribeToGroup();
     return true;
   } catch(e) { console.error(e); return false; }
 }
 
 async function fbSet(player) {
   if(isDemo) return;
-  try { setStatus('syncing'); const {id,...d}=player; await set(ref(db,`classement/${id}`),d); setStatus('online'); }
+  try { setStatus('syncing'); const {id,...d}=player; await set(ref(db,`${groupPath('classement')}/${id}`),d); setStatus('online'); }
   catch(e) { setStatus('offline'); showToast('⚠️ Erreur réseau'); }
 }
 async function fbUpdate(id, updates) {
   if(isDemo) return;
-  try { setStatus('syncing'); await update(ref(db,`classement/${id}`),updates); setStatus('online'); }
+  try { setStatus('syncing'); await update(ref(db,`${groupPath('classement')}/${id}`),updates); setStatus('online'); }
   catch(e) { setStatus('offline'); showToast('⚠️ Erreur réseau'); }
 }
 async function fbRemove(id) {
   if(isDemo) return;
-  try { setStatus('syncing'); await remove(ref(db,`classement/${id}`)); setStatus('online'); }
+  try { setStatus('syncing'); await remove(ref(db,`${groupPath('classement')}/${id}`)); setStatus('online'); }
   catch(e) { setStatus('offline'); showToast('⚠️ Erreur réseau'); }
 }
+
+
+/* ── GESTION DES GROUPES ── */
+function loadGroups() {
+  try {
+    const saved = localStorage.getItem(LS_GROUPS);
+    groups = saved ? JSON.parse(saved) : [DEFAULT_GROUP];
+    if(!groups.length) groups = [DEFAULT_GROUP];
+  } catch(e) { groups = [DEFAULT_GROUP]; }
+  try {
+    const saved = localStorage.getItem(LS_ACTIVE_GROUP);
+    activeGroup = (saved && groups.includes(saved)) ? saved : groups[0];
+  } catch(e) { activeGroup = groups[0]; }
+}
+
+function saveGroups() {
+  try {
+    localStorage.setItem(LS_GROUPS, JSON.stringify(groups));
+    localStorage.setItem(LS_ACTIVE_GROUP, activeGroup);
+  } catch(e) {}
+}
+
+function updateGroupBar() {
+  const el = $('active-group-name');
+  if(el) el.textContent = activeGroup;
+}
+
+function switchGroup(name) {
+  if(name === activeGroup) return;
+  activeGroup = name;
+  rankingPlayers = [];
+  recordData = null;
+  saveGroups();
+  renderClassement();
+  renderRecord();
+  subscribeToGroup();
+  showToast(`👥 Groupe : ${name}`);
+}
+
+window.openGroupsModal = function() {
+  renderGroupList();
+  $('new-group-name').value = '';
+  $('group-error').style.display = 'none';
+  $('modal-groups').classList.remove('hidden');
+  setTimeout(() => $('new-group-name').focus(), 300);
+};
+window.closeGroupsModal = function(e) {
+  if(!e || e.target === $('modal-groups')) $('modal-groups').classList.add('hidden');
+};
+
+function renderGroupList() {
+  $('group-list').innerHTML = groups.map(g => `
+    <div class="group-item${g===activeGroup?' active':''}" onclick="selectGroup('${esc(g)}')">
+      <div style="font-size:1.1rem">${g===activeGroup?'✅':'⭕'}</div>
+      <div class="group-item-name">${esc(g)}</div>
+      ${groups.length > 1 ? `<button class="group-delete-btn" onclick="deleteGroup(event,'${esc(g)}')">🗑️</button>` : ''}
+    </div>
+  `).join('');
+}
+
+window.selectGroup = function(name) {
+  switchGroup(name);
+  renderGroupList();
+};
+
+window.addGroup = function() {
+  const name = ($('new-group-name').value || '').trim();
+  const errEl = $('group-error');
+  if(!name) { errEl.textContent = 'Entre un nom de groupe.'; errEl.style.display='block'; return; }
+  if(groups.some(g => g.toLowerCase() === name.toLowerCase())) {
+    errEl.textContent = 'Ce groupe existe déjà.'; errEl.style.display='block'; return;
+  }
+  groups.push(name);
+  saveGroups();
+  switchGroup(name);
+  $('new-group-name').value = '';
+  errEl.style.display = 'none';
+  renderGroupList();
+  showToast(`✅ Groupe "${name}" créé !`);
+};
+
+window.deleteGroup = function(e, name) {
+  e.stopPropagation();
+  if(!confirm(`Supprimer le groupe "${name}" ? (Les données Firebase ne seront pas effacées)`)) return;
+  groups = groups.filter(g => g !== name);
+  if(!groups.length) groups = [DEFAULT_GROUP];
+  if(activeGroup === name) switchGroup(groups[0]);
+  saveGroups();
+  renderGroupList();
+  showToast(`🗑️ Groupe "${name}" supprimé`);
+};
 
 /* ── SETUP ── */
 window.submitSetup = function() {
@@ -785,7 +942,7 @@ window.useDemo = function() {
 function startApp() {
   $('setup-screen').classList.add('hidden');
   $('app').style.display='flex';
-  loadLocal(); loadRecord(); switchTab('comptage');
+  loadLocal(); loadRecord(); loadGroups(); switchTab('comptage');
 }
 function saveDemoRanking() { if(isDemo) localStorage.setItem(LS_DEMO, JSON.stringify(rankingPlayers)); }
 
@@ -1044,7 +1201,7 @@ window.saveRecord = async function() {
   if(isNaN(score)||score<0){ errEl.textContent='Entre un score valide.'; errEl.style.display='block'; return; }
   recordData = { name, score };
   if(!isDemo) {
-    try { await set(ref(db,'record'), recordData); }
+    try { await set(ref(db, groupPath('record')), recordData); }
     catch(e) { showToast('⚠️ Erreur réseau'); }
   } else {
     renderRecord();
@@ -1056,7 +1213,7 @@ window.clearRecord = async function() {
   if(!confirm('Effacer le record ?')) return;
   recordData = null;
   if(!isDemo) {
-    try { await remove(ref(db,'record')); }
+    try { await remove(ref(db, groupPath('record'))); }
     catch(e) { showToast('⚠️ Erreur réseau'); }
   } else {
     renderRecord();
@@ -1202,7 +1359,19 @@ window.closeSettingsPinModal = function(e) {
   if(!e||e.target===$('modal-settings-pin')) $('modal-settings-pin').classList.add('hidden');
 };
 window.closeSettings = function(e) { if(!e||e.target===$('modal-settings')) $('modal-settings').classList.add('hidden'); };
-window.reconfigure = function() { localStorage.removeItem(LS_CFG); location.reload(); };
+window.reconfigure = function() {
+  localStorage.removeItem(LS_CFG);
+  // Ferme toutes les modales
+  ['modal-settings','modal-settings-pin'].forEach(id => $(id).classList.add('hidden'));
+  // Cache l'app, affiche le setup directement sans reload
+  $('app').style.display = 'none';
+  $('setup-screen').classList.remove('hidden');
+  // Vide les champs du setup
+  ['cfg-dburl','cfg-apikey','cfg-projectid','cfg-appid'].forEach(id => {
+    const el = $(id); if(el) el.value = '';
+  });
+  $('setup-error') && ($('setup-error').style.display = 'none');
+};
 window.confirmResetAll = function() { if(!confirm('Effacer toutes les données locales ?')) return; localStorage.clear(); location.reload(); };
 
 
@@ -1286,7 +1455,7 @@ window.applyUpdate = function() {
 };
 
 document.addEventListener('keydown', e => {
-  if(e.key==='Escape') ['modal-add','modal-history','modal-settings','modal-score','modal-color-edit','modal-rank-edit','modal-settings-pin','modal-rename','modal-record'].forEach(id=>$(id).classList.add('hidden'));
+  if(e.key==='Escape') ['modal-add','modal-history','modal-settings','modal-score','modal-color-edit','modal-rank-edit','modal-settings-pin','modal-rename','modal-record','modal-groups'].forEach(id=>$(id).classList.add('hidden'));
 });
 
 
