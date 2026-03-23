@@ -495,7 +495,7 @@
 </div>
 
 <!-- Modal: changer couleur -->
-<div class="overlay hidden" id="modal-color-edit" onclick="closeColorEdit(event)">
+<div class="overlay hidden" id="modal-color-edit" onclick="closeColorEdit(event)" style="z-index:210">
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title">🎨 Changer la couleur</div>
@@ -1288,6 +1288,70 @@ window.applyUpdate = function() {
 document.addEventListener('keydown', e => {
   if(e.key==='Escape') ['modal-add','modal-history','modal-settings','modal-score','modal-color-edit','modal-rank-edit','modal-settings-pin','modal-rename','modal-record'].forEach(id=>$(id).classList.add('hidden'));
 });
+
+
+/* ── CLAVIER PLEIN ÉCRAN ── */
+// En plein écran, le navigateur ne remonte pas la vue quand le clavier apparaît.
+// On force le scroll vers le champ actif via visualViewport.
+(function() {
+  function scrollToFocused() {
+    const el = document.activeElement;
+    if(!el || (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA')) return;
+    // Petit délai pour laisser le clavier s'ouvrir
+    setTimeout(() => {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+  }
+
+  // Sur focus d'un input dans une modale
+  document.addEventListener('focusin', e => {
+    if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      if(document.fullscreenElement) {
+        scrollToFocused();
+      }
+    }
+  });
+
+  // visualViewport : déclenché quand le clavier apparaît/disparaît
+  if(window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+      const el = document.activeElement;
+      if(!el || (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA')) return;
+      if(document.fullscreenElement) {
+        // Calcule si le champ est caché sous le clavier
+        const rect = el.getBoundingClientRect();
+        const vvHeight = window.visualViewport.height;
+        if(rect.bottom > vvHeight - 10) {
+          setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+        }
+      }
+    });
+
+    window.visualViewport.addEventListener('scroll', () => {
+      // En plein écran, compense le scroll du viewport visuel
+      if(document.fullscreenElement) {
+        const offsetY = window.visualViewport.offsetTop;
+        // Déplace toutes les modales ouvertes pour suivre le viewport
+        document.querySelectorAll('.overlay:not(.hidden)').forEach(overlay => {
+          overlay.style.top = offsetY + 'px';
+          overlay.style.height = window.visualViewport.height + 'px';
+        });
+      }
+    });
+  }
+
+  // Réinitialise la position des overlays quand le clavier se ferme
+  document.addEventListener('focusout', () => {
+    setTimeout(() => {
+      if(!document.activeElement || document.activeElement === document.body) {
+        document.querySelectorAll('.overlay').forEach(o => {
+          o.style.top = '';
+          o.style.height = '';
+        });
+      }
+    }, 100);
+  });
+})();
 
 /* ── PIN ── */
 const PIN_CODE=APP_PIN;
