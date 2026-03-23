@@ -319,6 +319,13 @@
     .stat-inc-btn.plus{background:rgba(78,205,196,.2);color:var(--teal);border:1px solid rgba(78,205,196,.4)}
     .stat-inc-btn.minus{background:rgba(255,107,107,.15);color:var(--coral);border:1px solid rgba(255,107,107,.3)}
 
+
+    /* INLINE SCORE BTNS */
+    .vignette-inline-btns{display:flex;flex-direction:column;gap:4px;flex-shrink:0;margin-left:4px}
+    .inline-btn{width:32px;height:32px;border-radius:9px;border:none;font-size:1rem;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s ease;touch-action:manipulation;-webkit-user-select:none}
+    .inline-btn:active{transform:scale(.85)}
+    .inline-btn.plus{background:rgba(78,205,196,.22);color:var(--teal);border:1px solid rgba(78,205,196,.4)}
+    .inline-btn.minus{background:rgba(255,107,107,.16);color:var(--coral);border:1px solid rgba(255,107,107,.3)}
     /* LOCKOUT PIN */
     .pin-lockout{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px;background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.25);border-radius:14px;width:100%}
     .pin-lockout-icon{font-size:1.8rem}
@@ -484,7 +491,7 @@
       <div id="comptage-list"></div>
       <div class="reset-bar" id="reset-bar" style="display:none">
         <button class="btn btn-ghost btn-sm" onclick="resetScores()">🔄 Réinitialiser</button>
-        <button class="btn btn-ghost btn-sm" onclick="clearHistory()">🗑️ Historique</button>
+        <button class="btn btn-ghost btn-sm" onclick="openGlobalHistory()">📋 Historique</button>
       </div>
     </div>
 
@@ -693,6 +700,18 @@
       <button class="btn btn-ghost" style="flex:1" onclick="closeRenameRankModal()">Annuler</button>
       <button class="btn btn-primary" style="flex:1" onclick="saveRenameRank()">Valider</button>
     </div>
+  </div>
+</div>
+
+<!-- Modal: historique global -->
+<div class="overlay hidden" id="modal-global-history" onclick="closeGlobalHistory(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="font-family:'Lilita One',cursive;font-size:1.05rem">📋 Historique global</div>
+      <button class="btn btn-danger btn-sm" onclick="clearHistoryFromModal()">🗑️ Vider</button>
+    </div>
+    <div id="global-hist-list"></div>
   </div>
 </div>
 
@@ -1087,7 +1106,7 @@ window.switchTab = function(tab) {
 // step functions removed - now handled per modal
 
 /* ── COMPTAGE ── */
-const QUICK_VALUES = [5, 10, 15, 20, 50, 100, 200];
+const QUICK_VALUES = [5, 10, 15, 20];
 let currentScorePlayerId = null;
 let colorEditTarget = null;
 let colorEditId = null;
@@ -1112,10 +1131,11 @@ window.openScoreModal = function(id) {
   $('sm-name').style.color = pl.color;
   $('sm-score').textContent = pl.score;
   $('sm-custom').value = '';
-  $('sm-quick-pos').innerHTML = QUICK_VALUES.map((v,i) =>
-    `<button class="quick-btn pos${i===6?' wide':''}" onclick="applyQuick(${v})">+${v}</button>`
+  $('sm-quick-pos').innerHTML = QUICK_VALUES.map(v =>
+    `<button class="quick-btn pos" onclick="applyQuick(${v})">+${v}</button>`
   ).join('');
   $('modal-score').classList.remove('hidden');
+  setTimeout(() => { const inp=$('sm-custom'); if(inp){ inp.focus(); } }, 300);
 };
 window.closeScoreModal = function(e) {
   if(!e||e.target===$('modal-score')){ $('modal-score').classList.add('hidden'); currentScorePlayerId=null; }
@@ -1173,6 +1193,37 @@ window.saveRename = function() {
   $('sm-avatar').textContent = newName[0].toUpperCase();
   $('modal-rename').classList.add('hidden');
   showToast('✏️ Pseudo mis à jour !');
+};
+
+/* ── HISTORIQUE GLOBAL ── */
+window.openGlobalHistory = function() {
+  const all = [...localState.history].reverse();
+  const list = $('global-hist-list');
+  if(!all.length) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">📋</div>Aucun point enregistré</div>`;
+  } else {
+    list.innerHTML = all.map(h => {
+      const dot = `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${h.playerColor||'#888'};margin-right:6px;vertical-align:middle"></span>`;
+      return `<div class="hist-item">
+        <div>
+          <div class="hist-name">${dot}${esc(h.playerName||'?')}</div>
+          <div class="hist-meta">${h.time} · Score → ${h.scoreAfter}</div>
+        </div>
+        <div class="hist-delta ${h.delta>=0?'pos':'neg'}">${h.delta>0?'+':''}${h.delta}</div>
+      </div>`;
+    }).join('');
+  }
+  $('modal-global-history').classList.remove('hidden');
+};
+window.closeGlobalHistory = function(e) {
+  if(!e||e.target===$('modal-global-history')) $('modal-global-history').classList.add('hidden');
+};
+window.clearHistoryFromModal = function() {
+  if(!confirm('Vider tout l'historique ?')) return;
+  localState.history = [];
+  saveLocal();
+  $('modal-global-history').classList.add('hidden');
+  showToast('🗑️ Historique vidé');
 };
 window.resetScores = function() { if(!confirm('Réinitialiser tous les scores ?')) return; localState.players.forEach(p=>p.score=0); saveLocal(); renderComptage(); showToast('✅ Scores remis à zéro'); };
 window.clearHistory = function() { if(!confirm('Vider l\'historique ?')) return; localState.history=[]; saveLocal(); showToast('🗑️ Historique vidé'); };
@@ -1232,16 +1283,19 @@ function renderComptage() {
   const sorted=[...localState.players].sort((a,b)=>a.score-b.score);
   list.innerHTML=sorted.map((pl,i)=>{
     const isL=i===0&&localState.players.length>1;
-    return `<div class="vignette vignette-tap${isL?' leader':''}"
-         style="background:${pl.color}${isL?'22':'0d'};border:1.5px solid ${pl.color}${isL?'44':'1a'}"
-         onclick="openScoreModal('${pl.id}')">
+    return `<div class="vignette${isL?' leader':''}"
+         style="background:${pl.color}${isL?'22':'0d'};border:1.5px solid ${pl.color}${isL?'44':'1a'}">
       <div class="rank-badge">#${i+1}</div>
-      <div class="avatar" style="background:${pl.color}">${esc(pl.name[0].toUpperCase())}</div>
-      <div class="player-info">
+      <div class="avatar" style="background:${pl.color}" onclick="openScoreModal('${pl.id}')">${esc(pl.name[0].toUpperCase())}</div>
+      <div class="player-info" onclick="openScoreModal('${pl.id}')" style="cursor:pointer">
         <div class="player-name" style="color:${pl.color}">${esc(pl.name)}${isL?'<span class="leader-badge">🏆 Leader</span>':''}</div>
         <div class="player-score" id="score-${pl.id}">${pl.score}</div>
       </div>
-      <div style="flex-shrink:0;color:rgba(255,255,255,.25);font-size:1.3rem">›</div>
+      <div class="vignette-inline-btns" onclick="event.stopPropagation()">
+        <button class="inline-btn plus" onclick="addScore('${pl.id}',1)">+</button>
+        <button class="inline-btn minus" onclick="addScore('${pl.id}',-1)">−</button>
+      </div>
+      <div style="flex-shrink:0;color:rgba(255,255,255,.25);font-size:1.2rem;margin-left:2px" onclick="openScoreModal('${pl.id}')">›</div>
     </div>`;
   }).join('');
 }
@@ -1275,7 +1329,7 @@ function renderClassement() {
       <div class="avatar" style="background:${pl.color};width:40px;height:40px;font-size:1rem">${esc((pl.name||'?')[0].toUpperCase())}</div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:900;font-size:.9rem;color:${pl.color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(pl.name)}</div>
-        <div style="font-size:.68rem;color:var(--muted)">${pa} partie${pa!==1?'s':''} · ${pct}% victoires</div>
+        <div style="font-size:.68rem;color:var(--muted)">${pa} partie${pa!==1?'s':''} · <span style="color:var(--teal)">${pct}%V</span> · <span style="color:var(--coral)">${pa===0?0:Math.round(d/pa*100)}%D</span></div>
         <div class="win-bar"><div class="win-fill" style="width:${pct}%"></div></div>
       </div>
       <div class="stat-pills">
@@ -1475,7 +1529,10 @@ window.openHistory = function(id) {
   $('hist-list').innerHTML=entries.length===0
     ?`<div class="empty"><div class="empty-icon">📋</div>Aucun point enregistré</div>`
     :entries.map(h=>`<div class="hist-item"><div><div class="hist-name">${h.delta>0?'Points ajoutés':'Points retirés'}</div><div class="hist-meta">${h.time} · Score → ${h.scoreAfter}</div></div><div class="hist-delta ${h.delta>=0?'pos':'neg'}">${h.delta>0?'+':''}${h.delta}</div></div>`).join('');
-  $('modal-history').classList.remove('hidden');
+  // Monte au dessus de la modale score si elle est ouverte
+  const histModal = $('modal-history');
+  histModal.style.zIndex = $('modal-score').classList.contains('hidden') ? '200' : '215';
+  histModal.classList.remove('hidden');
 };
 window.closeHistoryModal = function(e) { if(!e||e.target===$('modal-history')) $('modal-history').classList.add('hidden'); };
 
@@ -1691,7 +1748,7 @@ window.applyUpdate = function() {
 };
 
 document.addEventListener('keydown', e => {
-  if(e.key==='Escape') ['modal-add','modal-history','modal-settings','modal-score','modal-color-edit','modal-rank-edit','modal-settings-pin','modal-rename','modal-record','modal-groups','modal-rename-rank'].forEach(id=>$(id).classList.add('hidden'));
+  if(e.key==='Escape') ['modal-add','modal-history','modal-settings','modal-score','modal-color-edit','modal-rank-edit','modal-settings-pin','modal-rename','modal-record','modal-groups','modal-rename-rank','modal-global-history'].forEach(id=>$(id).classList.add('hidden'));
 });
 
 
