@@ -748,15 +748,29 @@
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title">🔒 Accès paramètres</div>
-    <p style="font-size:.8rem;color:var(--muted);margin-bottom:14px">Entre le code administrateur pour accéder aux paramètres Firebase.</p>
-    <div class="pin-input-wrap" style="margin-bottom:10px">
-      <input class="pin-input" id="settings-pin-input" type="password" placeholder="••••••" maxlength="10" autocomplete="off" onkeydown="if(event.key==='Enter')checkSettingsPin()" style="font-size:1rem;letter-spacing:5px"/>
-      <button class="pin-toggle" id="settings-pin-toggle" onclick="toggleSettingsPinVis()" type="button">👁️</button>
+    <p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Entre le code administrateur pour accéder aux paramètres Firebase.</p>
+    <div class="pin-attempts" id="spi-attempts" style="margin-bottom:10px">
+      <div class="pin-attempt-dot" id="spa0"></div>
+      <div class="pin-attempt-dot" id="spa1"></div>
+      <div class="pin-attempt-dot" id="spa2"></div>
     </div>
-    <div id="settings-pin-error" style="color:var(--coral);font-size:.75rem;font-weight:700;min-height:16px;text-align:center;margin-bottom:12px"></div>
-    <div style="display:flex;gap:10px">
-      <button class="btn btn-ghost" style="flex:1" onclick="closeSettingsPinModal()">Annuler</button>
-      <button class="btn btn-primary" style="flex:1" onclick="checkSettingsPin()">Accéder</button>
+    <div id="spi-lockout-zone" style="display:none;width:100%;margin-bottom:10px">
+      <div class="pin-lockout">
+        <div class="pin-lockout-icon">🔒</div>
+        <div class="pin-lockout-msg">Trop de tentatives incorrectes.<br>Réessaie dans</div>
+        <div class="pin-lockout-timer" id="spi-lockout-timer">60</div>
+      </div>
+    </div>
+    <div id="spi-input-zone">
+      <div class="pin-input-wrap" style="margin-bottom:10px">
+        <input class="pin-input" id="settings-pin-input" type="password" placeholder="••••••" maxlength="10" autocomplete="off" onkeydown="if(event.key==='Enter')checkSettingsPin()" style="font-size:1rem;letter-spacing:5px"/>
+        <button class="pin-toggle" id="settings-pin-toggle" onclick="toggleSettingsPinVis()" type="button">👁️</button>
+      </div>
+      <div id="settings-pin-error" style="color:var(--coral);font-size:.75rem;font-weight:700;min-height:16px;text-align:center;margin-bottom:12px"></div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost" style="flex:1" onclick="closeSettingsPinModal()">Annuler</button>
+        <button class="btn btn-primary" style="flex:1" onclick="checkSettingsPin()">Accéder</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1467,23 +1481,83 @@ window.closeHistoryModal = function(e) { if(!e||e.target===$('modal-history')) $
 
 /* ── SETTINGS ── */
 window.openSettings = function() {
+  // Vérifie si lockout actif avant d'ouvrir
+  const lockTime = parseInt(localStorage.getItem(LS_LOCKOUT_SPI)||'0');
+  if(lockTime && (Date.now() - lockTime) < LOCKOUT_SECS * 1000) {
+    $('modal-settings-pin').classList.remove('hidden');
+    applySpiLockout();
+    return;
+  }
+  $('spi-lockout-zone').style.display = 'none';
+  $('spi-input-zone').style.display   = 'block';
   $('modal-settings-pin').classList.remove('hidden');
   $('settings-pin-input').value='';
   $('settings-pin-error').textContent='';
   settingsPinVisible=false;
   $('settings-pin-input').type='password';
+  updateSpiDots();
   setTimeout(()=>$('settings-pin-input').focus(), 350);
 };
 let _pendingAction = 'settings'; // 'settings' | 'groups'
 
+/* ── LOCKOUT SETTINGS ── */
+const LS_LOCKOUT_SPI = 'izidutch_lockout_spi';
+let spiAttempts      = 0;
+let spiLockInterval  = null;
+
+function updateSpiDots() {
+  for(let i=0;i<MAX_ATTEMPTS;i++){
+    const d = $(`spa${i}`);
+    if(d) d.classList.toggle('used', i < spiAttempts);
+  }
+}
+
+function startSpiLockout() {
+  localStorage.setItem(LS_LOCKOUT_SPI, Date.now().toString());
+  applySpiLockout();
+}
+
+function applySpiLockout() {
+  const lockTime = parseInt(localStorage.getItem(LS_LOCKOUT_SPI)||'0');
+  const elapsed  = Math.floor((Date.now() - lockTime) / 1000);
+  let remaining  = LOCKOUT_SECS - elapsed;
+  if(remaining <= 0) { clearSpiLockout(); return; }
+
+  $('spi-input-zone').style.display   = 'none';
+  $('spi-lockout-zone').style.display = 'block';
+  $('spi-lockout-timer').textContent  = remaining + 's';
+
+  if(spiLockInterval) clearInterval(spiLockInterval);
+  spiLockInterval = setInterval(() => {
+    remaining--;
+    if(remaining <= 0) { clearInterval(spiLockInterval); clearSpiLockout(); }
+    else $('spi-lockout-timer').textContent = remaining + 's';
+  }, 1000);
+}
+
+function clearSpiLockout() {
+  localStorage.removeItem(LS_LOCKOUT_SPI);
+  spiAttempts = 0;
+  updateSpiDots();
+  $('spi-lockout-zone').style.display = 'none';
+  $('spi-input-zone').style.display   = 'block';
+  $('settings-pin-input').value = '';
+  $('settings-pin-error').textContent = '';
+}
+
 window.checkSettingsPin = function() {
+  // Vérifie si lockout actif
+  const lockTime = parseInt(localStorage.getItem(LS_LOCKOUT_SPI)||'0');
+  if(lockTime && (Date.now() - lockTime) < LOCKOUT_SECS * 1000) return;
+
   const val = ($('settings-pin-input').value||'').trim();
   if(val === SETTINGS_PIN) {
+    spiAttempts = 0;
+    updateSpiDots();
     $('modal-settings-pin').classList.add('hidden');
     if(_pendingAction === 'groups') {
       _showGroupsModal();
     } else {
-      // Affiche les vraies infos settings
       try {
         const saved=localStorage.getItem(LS_CFG);
         const cfg = saved ? JSON.parse(saved) : DEFAULT_CFG;
@@ -1493,10 +1567,18 @@ window.checkSettingsPin = function() {
       } catch(e){}
       $('modal-settings').classList.remove('hidden');
     }
-    _pendingAction = 'settings'; // reset
+    _pendingAction = 'settings';
   } else {
-    $('settings-pin-error').textContent='❌ Code incorrect';
+    spiAttempts++;
+    updateSpiDots();
     $('settings-pin-input').classList.add('err');
+    const remaining = MAX_ATTEMPTS - spiAttempts;
+    if(spiAttempts >= MAX_ATTEMPTS) {
+      $('settings-pin-error').textContent = '';
+      setTimeout(() => startSpiLockout(), 600);
+    } else {
+      $('settings-pin-error').textContent = `❌ Code incorrect — ${remaining} tentative${remaining>1?'s':''} restante${remaining>1?'s':''}`;
+    }
     setTimeout(()=>{ $('settings-pin-input').classList.remove('err'); $('settings-pin-input').value=''; }, 800);
   }
 };
