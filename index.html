@@ -550,7 +550,7 @@
     <div class="quick-btns" id="sm-quick-pos"></div>
 
     <div class="custom-row">
-      <input class="custom-val-input" id="sm-custom" type="number" placeholder="Valeur..." min="1" max="9999"/>
+      <input class="custom-val-input" id="sm-custom" type="number" placeholder="Valeur..." min="1" max="9999" onkeydown="if(event.key==='Enter'||event.keyCode===13)applyCustom(1)"/>
       <button class="apply-btn apply-minus" onclick="applyCustom(-1)">− Retirer</button>
       <button class="apply-btn apply-plus" onclick="applyCustom(1)">+ Ajouter</button>
     </div>
