@@ -175,11 +175,11 @@
     .step-chip.active{background:rgba(108,99,255,.22);border-color:var(--accent);color:#b8b2ff}
     .step-custom{width:50px;padding:5px 8px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font-family:'Nunito',sans-serif;font-weight:800;font-size:.78rem;outline:none;text-align:center}
 
-    .ranking-row{display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--card-bg);border:1px solid var(--card-bdr);border-radius:17px;margin-bottom:8px;animation:slideIn .28s ease}
-    .rank-num{font-family:'Lilita One',cursive;font-size:1rem;color:rgba(255,255,255,.25);min-width:26px;text-align:center}
-    .stat-pills{display:flex;gap:5px}
-    .stat-pill{display:flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.06);border-radius:9px;padding:5px 9px;min-width:40px}
-    .stat-val{font-family:'Lilita One',cursive;font-size:.95rem;line-height:1}
+    .ranking-row{display:flex;align-items:center;gap:7px;padding:10px 11px;background:var(--card-bg);border:1px solid var(--card-bdr);border-radius:17px;margin-bottom:8px;animation:slideIn .28s ease}
+    .rank-num{font-family:'Lilita One',cursive;font-size:.95rem;color:rgba(255,255,255,.25);min-width:22px;text-align:center}
+    .stat-pills{display:flex;gap:4px;flex-shrink:0}
+    .stat-pill{display:flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.06);border-radius:9px;padding:4px 6px;min-width:32px}
+    .stat-val{font-family:'Lilita One',cursive;font-size:.85rem;line-height:1}
     .stat-lbl{font-size:.56rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
     .rank-actions{display:flex;flex-direction:column;gap:4px;flex-shrink:0}
     .win-bar{height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden;margin-top:3px}
@@ -557,7 +557,7 @@
 
     <div class="score-divider"></div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="openHistory(currentScorePlayerId)">📋 Historique</button>
+      <button class="btn btn-ghost btn-sm" style="flex:1" id="sm-hist-btn" onclick="openHistoryFromScore()">📋 Historique</button>
       <button class="btn btn-danger btn-sm" style="flex:1" onclick="confirmRemovePlayer()">🗑️ Supprimer</button>
     </div>
   </div>
@@ -1338,7 +1338,7 @@ function renderClassement() {
     const pct=pa===0?0:Math.round(v/pa*100);
     return `<div class="ranking-row vignette-tap" data-pid="${pl.id}" onclick="inlineRankOpen(this)">
       <div class="rank-num">${medals[i]||'#'+(i+1)}</div>
-      <div class="avatar" style="background:${pl.color};width:40px;height:40px;font-size:1rem">${esc((pl.name||'?')[0].toUpperCase())}</div>
+      <div class="avatar" style="background:${pl.color};width:36px;height:36px;font-size:.9rem;border-radius:10px">${esc((pl.name||'?')[0].toUpperCase())}</div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:900;font-size:.9rem;color:${pl.color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(pl.name)}</div>
         <div style="font-size:.68rem;color:var(--muted)">${pa} partie${pa!==1?'s':''} · <span style="color:var(--teal)">${pct}%V</span> · <span style="color:var(--coral)">${pa===0?0:Math.round(d/pa*100)}%D</span></div>
@@ -1541,12 +1541,19 @@ window.openHistory = function(id) {
   $('hist-list').innerHTML=entries.length===0
     ?`<div class="empty"><div class="empty-icon">📋</div>Aucun point enregistré</div>`
     :entries.map(h=>`<div class="hist-item"><div><div class="hist-name">${h.delta>0?'Points ajoutés':'Points retirés'}</div><div class="hist-meta">${h.time} · Score → ${h.scoreAfter}</div></div><div class="hist-delta ${h.delta>=0?'pos':'neg'}">${h.delta>0?'+':''}${h.delta}</div></div>`).join('');
-  // Monte au dessus de la modale score si elle est ouverte
   const histModal = $('modal-history');
-  histModal.style.zIndex = $('modal-score').classList.contains('hidden') ? '200' : '215';
+  histModal.style.zIndex = $('modal-score').classList.contains('hidden') ? '200' : '216';
   histModal.classList.remove('hidden');
 };
-window.closeHistoryModal = function(e) { if(!e||e.target===$('modal-history')) $('modal-history').classList.add('hidden'); };
+/* Appelé depuis le bouton dans modal-score — garde l'id avant fermeture éventuelle */
+window.openHistoryFromScore = function() {
+  const id = currentScorePlayerId;
+  if(!id) return;
+  openHistory(id);
+};
+window.closeHistoryModal = function(e) {
+  if(!e||e.target===$('modal-history')) $('modal-history').classList.add('hidden');
+};
 
 /* ── SETTINGS ── */
 window.openSettings = function() {
