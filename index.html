@@ -1112,14 +1112,28 @@ let colorEditTarget = null;
 let colorEditId = null;
 let selectedEditColor = null;
 
+let _sortTimer = null;
+const SORT_DELAY = 2000; // 2 secondes avant de retrier
+
 function addScore(id, delta) {
   const pl = localState.players.find(p=>p.id===id); if(!pl) return;
   pl.score += delta;
   localState.history.push({playerId:id,playerName:pl.name,playerColor:pl.color,delta,scoreAfter:pl.score,time:nowStr()});
   saveLocal();
+  // Mise à jour immédiate du score affiché SANS retrier
   const smS = $('sm-score'); if(smS) smS.textContent = pl.score;
-  const el=$('score-'+id); if(el){ el.style.transform='scale(1.3)'; setTimeout(()=>el.style.transform='',180); }
-  renderComptage();
+  const el = $('score-'+id);
+  if(el) {
+    el.textContent = pl.score;
+    el.style.transform = 'scale(1.3)';
+    setTimeout(() => el.style.transform = '', 180);
+  }
+  // Debounce du retri : annule le timer précédent et en repart un nouveau
+  if(_sortTimer) clearTimeout(_sortTimer);
+  _sortTimer = setTimeout(() => {
+    _sortTimer = null;
+    renderComptage(); // retri complet après le délai
+  }, SORT_DELAY);
 }
 
 window.openScoreModal = function(id) {
